@@ -164,7 +164,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
                         <tr>
                           <th>Quantidade</th>
                           <th>Descrição</th>
-						  <th>Patrimônio</th>
+                          <th>Patrimônio</th>
                           <th>Categoria</th>
                           <th>Localização</th>
                           <th>Situação</th>
