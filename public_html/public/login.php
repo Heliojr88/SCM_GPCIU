@@ -110,13 +110,7 @@ if(!empty($_POST) or !empty($_GET)){
                 </p>
                 <p class="change_link">Novo usuário?
                   <a href="form.php" class="to_register"> Crie a sua conta </a>
-                </p>
-				
-		<!--<p class="change_link">
-				<img src="images\android.jpg">
-                  <a href="arquivos\SCM.apk" class="to_register"> Baixe o Aplicativo do SCM Android </a>
-                </p>-->
-				
+                </p>	
 		<p class="change_link">
 				<img src="images\pdf.png">
                   <a href="arquivos\Tutorial SCM.pdf" target="_blank" class="to_register"> Baixe o tutorial do SCM </a>
@@ -124,7 +118,7 @@ if(!empty($_POST) or !empty($_GET)){
                 
                 <p class="change_link">
                     <img src="images\pdf.png">
-                    <a href="arquivos\leiaute-deposito.pdf" target="_blank" class="to_register"> Informações sobre o novo Leiaute </a>
+                    <a href="arquivos\leiaute-deposito.pdf" target="_blank" class="to_register"> Informações sobre o novo Layout </a>
                 </p>
 				
                 <div class="clearfix"></div>
