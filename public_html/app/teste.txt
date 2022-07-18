@@ -1,0 +1,12 @@
+
+
+SELECT DescricaoMat,
+COUNT(m.Quantidade) as quantidade
+from material m
+GROUP by DescricaoMat;
+
+
+SELECT COUNT(m.Quantidade) as Quantidade, m.DescricaoMat
+FROM material m
+        WHERE m.Localizacao_idLocalizacao = 1
+        GROUP by m.DescricaoMat

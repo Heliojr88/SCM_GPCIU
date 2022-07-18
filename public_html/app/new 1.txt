@@ -1,0 +1,32 @@
+SELECT date_format(tm.DataHora,'%d/%m/%Y') as dataTramitacao, 
+			   tm.MotivoTramitacao, 
+			   tm.ObsTramitacao, 
+			   m.DescricaoMat, 
+			   u.NomeUsuario, 
+			   u.Siape, 
+			   tm.Origem,
+               tm.Destino,
+			   tm.Quantidade,
+               l.Localizacao as Origem,
+               l2.localizacao as Destino
+               
+			   FROM tramitacaomat tm, material m, usuarios u, localizacao l, localizacao l2
+          
+			   WHERE tm.Material_idMaterial = m.idGrupoMaterial 
+			   AND tm.Usuarios_idUsuario = u.idUsuario 
+			   AND tm.Usuarios_Siape = u.Siape 
+               and tm.idLocalizacaoOrigem = l.idLocalizacao
+               AND tm.idLocalizacaoDestino = l2.idLocalizacao
+GROUP by    
+               tm.MotivoTramitacao, 
+			   tm.ObsTramitacao, 
+			   m.DescricaoMat, 
+			   u.NomeUsuario, 
+			   u.Siape, 
+			   tm.Origem,
+               tm.Destino,
+			   tm.Quantidade,
+               l.Localizacao,
+               l2.localizacao,
+			   tm.DataHora
+                           
