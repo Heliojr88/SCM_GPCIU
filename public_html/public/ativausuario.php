@@ -10,12 +10,13 @@ $master = $teste->fetch(PDO::FETCH_ASSOC);
 
 //verifica se o usuário é master
 if($master['master'] != 1){
-	   echo"<script language='javascript' type='text/javascript'>alert('Usuário sem permissão para acessar a funcionalidade!');window.location.href='index7.php';</script>";
-
+	echo "<script>alert('Usuário sem permissão para acessar a funcionalidade!');window.location.href='index7.php';</script>";
+	exit;
 }
 
- if(!empty($_POST) or !empty($_GET)){
-	 
+ if(!empty($_POST)){
+    csrf_validate();
+
     $siapeUsuario   = $_POST['usuario'];
     $ativar  = $_POST['ativar'];
 
@@ -96,7 +97,7 @@ if($master['master'] != 1){
               </div>
                <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$nome;?></h2>
+                <h2><?= e($nome) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -186,6 +187,7 @@ if($master['master'] != 1){
                     <br />
                    
                     <form action="ativausuario.php" id="ativausuario" name="ativausuario" method="POST" class="form-horizontal form-label-left">
+                     <?php csrf_field(); ?>
 
 			<div class="form-group">
                         <label class="control-label col-md-3 col-sm-3 col-xs-12" for="usuario">Usuários</label>
@@ -198,9 +200,9 @@ if($master['master'] != 1){
 
                              ?>
 						  
-                              <option value="<?=$usuario['siape']?>"><td><?=$usuario['nomeUsuario']?></td>
-                                                                   -&nbsp;Siape:&nbsp;<?=$usuario['siape']?></td>
-                                                                        -&nbsp;Ativo:&nbsp; <?=$usuario['ativo']?></td>
+                              <option value="<?= e($usuario['siape']) ?>"><td><?= e($usuario['nomeUsuario']) ?></td>
+                                                                   -&nbsp;Siape:&nbsp;<?= e($usuario['siape']) ?></td>
+                                                                        -&nbsp;Ativo:&nbsp; <?= e($usuario['ativo']) ?></td>
                               </option>
                       
                             <?php

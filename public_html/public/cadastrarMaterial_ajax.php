@@ -10,7 +10,7 @@ $consultasublocal = $_pdo->getSubLocalizacao($localizacao);
     WHILE($sublocal = $consultasublocal->fetch(PDO::FETCH_ASSOC)):
 
 ?>
-         <option value="<?=$sublocal['idSubLocalizacao']?>"> <td><?=$sublocal['subLocalizacao']?></td> </option>
+         <option value="<?= e($sublocal['idSubLocalizacao']) ?>"> <td><?= e($sublocal['subLocalizacao']) ?></td> </option>
 <?php
     ENDWHILE;
 }

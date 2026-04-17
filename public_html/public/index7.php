@@ -51,7 +51,7 @@ $nome = $_SESSION['nome'];
               </div>
               <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$nome;?></h2>
+                <h2><?= e($nome) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -201,14 +201,14 @@ $nome = $_SESSION['nome'];
 					  ?>
 					  
                         <tr>
-                          <td data-order="<?= strtotime($material['DataHora']) ?>"><?=$material['dataTramitacao']?></td>
-                          <td><?=$material['DescricaoMat']?></td>
-                          <td><?=$material['Quantidade']?></td>
-                          <td><?=$material['NumPatrimonio']?></td>
-                          <td><?=$material['Origem']?></td>
-                          <td><?=$material['Destino']?></td>
-                          <td><?=$material['subLocalizacao']?></td>
-                          <td><?=$material['NomeUsuario']?></td>
+                          <td data-order="<?= strtotime($material['DataHora']) ?>"><?= e($material['dataTramitacao']) ?></td>
+                          <td><?= e($material['DescricaoMat']) ?></td>
+                          <td><?= e($material['Quantidade']) ?></td>
+                          <td><?= e($material['NumPatrimonio']) ?></td>
+                          <td><?= e($material['Origem']) ?></td>
+                          <td><?= e($material['Destino']) ?></td>
+                          <td><?= e($material['subLocalizacao']) ?></td>
+                          <td><?= e($material['NomeUsuario']) ?></td>
                         
                         </tr>
 						

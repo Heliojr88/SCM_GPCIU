@@ -24,7 +24,7 @@ $idLocalizacao = $_GET['idLocalizacao'] ?? null;
 
           $local = $loc->fetch(PDO::FETCH_ASSOC);
     ?>
-        Relatório - <?=$local['Localizacao'];?>            
+        Relatório - <?= e($local['Localizacao']) ?>            
     </title>
 
     <!-- Bootstrap -->
@@ -60,7 +60,7 @@ $idLocalizacao = $_GET['idLocalizacao'] ?? null;
               </div>
               <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$nome;?></h2>
+                <h2><?= e($nome) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -115,7 +115,7 @@ $idLocalizacao = $_GET['idLocalizacao'] ?? null;
                                 $local = $loc->fetch(PDO::FETCH_ASSOC);
 				  
 			  ?>
-                <h3>Relatório - <?=$local['Localizacao'];?> <small> </small></h3>
+                <h3>Relatório - <?= e($local['Localizacao']) ?> <small> </small></h3>
                </div>
                 
               
@@ -123,6 +123,7 @@ $idLocalizacao = $_GET['idLocalizacao'] ?? null;
                         
                     </div>
 				<form method="POST">
+				 <?php csrf_field(); ?>
 					<div class="form-group">
 						<button type="submit" class="btn btn-success" style="float: right; margin-left: 10px">Filtrar</button>
 					<select id="sublocalizacao" name="sublocalizacao" class="form-control" name="sublocalizacao" style="width: 200px; float: right">
@@ -133,7 +134,7 @@ $idLocalizacao = $_GET['idLocalizacao'] ?? null;
 							  WHILE($sublocal = $consultasublocal->fetch(PDO::FETCH_ASSOC)):
 
 					?>
-							 <option value="<?=$sublocal['idSubLocalizacao']?>" <?= ($sublocal['idSubLocalizacao'] == $_POST['sublocalizacao'] ? 'selected' : '') ?> <td><?=$sublocal['subLocalizacao']?></td> </option>
+							 <option value="<?= e($sublocal['idSubLocalizacao']) ?>" <?= ($sublocal['idSubLocalizacao'] == $_POST['sublocalizacao'] ? 'selected' : '') ?> <td><?= e($sublocal['subLocalizacao']) ?></td> </option>
 
 					<?php
 					ENDWHILE;
@@ -193,8 +194,11 @@ $idLocalizacao = $_GET['idLocalizacao'] ?? null;
                       <tbody>
 					  
                       <?php
-			$sublocalizacao = $_POST['sublocalizacao'];
-                        
+			if (!empty($_POST)) {
+				csrf_validate();
+			}
+			$sublocalizacao = $_POST['sublocalizacao'] ?? null;
+
                         if(!empty($sublocalizacao)){
                             $consulta = $_pdo->getMaterialSubLocal($idLocalizacao,$sublocalizacao);
                         }else{
@@ -205,13 +209,13 @@ $idLocalizacao = $_GET['idLocalizacao'] ?? null;
 			?>
 					  
                         <tr>
-                          <td><?=$material['Quantidade']?></td>
-                          <td><?=$material['DescricaoMat']?></td>
-                          <td><?=$material['NumPatrimonio']?></td>
-                          <td><?=$material['Categoria']?></td>
-                          <td><?=$material['Localizacao']?></td>
-                          <td><?=$material['subLocalizacao']?></td>
-                          <td><?=$material['SituacaoMat']?></td>
+                          <td><?= e($material['Quantidade']) ?></td>
+                          <td><?= e($material['DescricaoMat']) ?></td>
+                          <td><?= e($material['NumPatrimonio']) ?></td>
+                          <td><?= e($material['Categoria']) ?></td>
+                          <td><?= e($material['Localizacao']) ?></td>
+                          <td><?= e($material['subLocalizacao']) ?></td>
+                          <td><?= e($material['SituacaoMat']) ?></td>
                         </tr>
 						
                         <?php

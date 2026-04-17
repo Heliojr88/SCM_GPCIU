@@ -18,6 +18,18 @@
 
 require_once __DIR__ . '/pdo.php';
 
+// Headers de segurança comuns. Aplicados antes de qualquer saída para
+// evitar Clickjacking, MIME sniffing e vazamento de Referer cross-site.
+if (!headers_sent()) {
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: SAMEORIGIN');
+    header('Referrer-Policy: same-origin');
+    header('X-XSS-Protection: 0');
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    }
+}
+
 if (session_status() === PHP_SESSION_NONE) {
     // Endurece o cookie de sessão antes de iniciá-la
     $cookieParams = [
@@ -32,6 +44,11 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.use_strict_mode', '1');
     ini_set('session.use_only_cookies', '1');
     session_start();
+}
+
+// Token CSRF por sessão, compartilhado entre todas as páginas autenticadas.
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
 // Conexão global, reutilizada por todas as páginas
@@ -88,4 +105,30 @@ function requireLogin(?int $permissaoExigida = null): void
 function pdoConn(): connectDB
 {
     return $GLOBALS['_pdo'];
+}
+
+/** Retorna o token CSRF da sessão corrente. */
+function csrf_token(): string
+{
+    return $_SESSION['csrf_token'] ?? '';
+}
+
+/** Ecoa um input hidden com o token CSRF, para incluir nos forms. */
+function csrf_field(): void
+{
+    echo '<input type="hidden" name="_csrf" value="' . e(csrf_token()) . '">';
+}
+
+/**
+ * Valida o token CSRF do request. Aborta com 403 se inválido.
+ * Deve ser chamada logo no início dos handlers que processam $_POST.
+ */
+function csrf_validate(): void
+{
+    $sent = $_POST['_csrf'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    $expected = $_SESSION['csrf_token'] ?? '';
+    if ($expected === '' || !is_string($sent) || !hash_equals($expected, $sent)) {
+        http_response_code(403);
+        exit('Token CSRF inválido. Recarregue a página e tente novamente.');
+    }
 }

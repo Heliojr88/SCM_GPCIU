@@ -55,7 +55,7 @@ $nome = $_SESSION['nome'];
               </div>
                <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$nome;?></h2>
+                <h2><?= e($nome) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -138,7 +138,7 @@ $nome = $_SESSION['nome'];
 
 					  Entre com o código QR
 						(<a href="http://zxing.appspot.com/scan?ret=http://www.agenciageeks.com.br/deposito/public/consultaMaterial.php?codigo={CODE}">LEITOR QR</a>):
-						<input type="text" name="codigo" value="<?= $_GET['codigo'] ?>" />
+						<input type="text" name="codigo" value="<?= e($_GET['codigo']) ?>" />
 					 
 					  
 					  					  

@@ -7,7 +7,8 @@ error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 $nome  = $_SESSION['nome'];
 $siape = $_SESSION['siape'];
    
-if(!empty($_POST) or !empty($_GET)){
+if(!empty($_POST)){
+csrf_validate();
 
 $quantidade      = $_POST['quantidade'];
 $idGrupoMaterial = $_POST['material'];
@@ -113,7 +114,7 @@ $cadastrar = $_pdo->insereItensMaterial($quantidade,$localizacao,$nome_imagem,$s
               </div>
               <div class="profile_info">
                 <span>Bem vindo,</span>
-				<h2><?=$nome?></h2>
+				<h2><?= e($nome) ?></h2>
                 <h2></h2>
               </div>
             </div>
@@ -203,7 +204,8 @@ $cadastrar = $_pdo->insereItensMaterial($quantidade,$localizacao,$nome_imagem,$s
                   <div class="x_content">
                     <br />
                    
-				   <form action="<?php echo $_SERVER['PHP_SELF'] ?>" id="indicemat" name="indicemat" method="POST"  enctype="multipart/form-data"  class="form-horizontal form-label-left">
+				   <form action="<?= e($_SERVER['PHP_SELF']) ?>" id="indicemat" name="indicemat" method="POST"  enctype="multipart/form-data"  class="form-horizontal form-label-left">
+					<?php csrf_field(); ?>
 					 
 					 <div class="form-group">
                       <label class="control-label col-md-3 col-sm-3 col-xs-12" for="material">Materiais</label>
@@ -216,7 +218,7 @@ $cadastrar = $_pdo->insereItensMaterial($quantidade,$localizacao,$nome_imagem,$s
 					  
 					      ?>
 					         
-							 <option value="<?=$material['idGrupoMaterial']?>"><td><?=$material['DescricaoMat']?></td>
+							 <option value="<?= e($material['idGrupoMaterial']) ?>"><td><?= e($material['DescricaoMat']) ?></td>
 							                                      
 							 </option>
 							 
@@ -240,7 +242,7 @@ $cadastrar = $_pdo->insereItensMaterial($quantidade,$localizacao,$nome_imagem,$s
 					  
 					      ?>
 						  
-                            <option value="<?=$localizacao['idLocalizacao']?>"><?=$localizacao['Localizacao']?></option>
+                            <option value="<?= e($localizacao['idLocalizacao']) ?>"><?= e($localizacao['Localizacao']) ?></option>
                       
 						  <?php
 						    ENDWHILE

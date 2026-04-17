@@ -7,7 +7,8 @@ error_reporting(E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 $nome = $_SESSION['nome'];
 $siape = $_SESSION['siape'];
 
-if (!empty($_POST) or ! empty($_GET)) {
+if (!empty($_POST)) {
+    csrf_validate();
 
     $descricao       = $_POST['descricao'];
     $patrimonio      = $_POST['patrimonio'];
@@ -112,7 +113,7 @@ if (!empty($_POST) or ! empty($_GET)) {
                             </div>
                             <div class="profile_info">
                                 <span>Bem vindo,</span>
-                                <h2><?= $nome ?></h2>
+                                <h2><?= e($nome) ?></h2>
                                 <h2></h2>
                             </div>
                         </div>
@@ -202,7 +203,8 @@ if (!empty($_POST) or ! empty($_GET)) {
                                     <div class="x_content">
                                         <br />
 
-                                        <form action="<?php echo $_SERVER['PHP_SELF'] ?>" id="ManterMaterial" name="ManterMaterial" method="POST"  enctype="multipart/form-data"  class="form-horizontal form-label-left">
+                                        <form action="<?= e($_SERVER['PHP_SELF']) ?>" id="ManterMaterial" name="ManterMaterial" method="POST"  enctype="multipart/form-data"  class="form-horizontal form-label-left">
+                                         <?php csrf_field(); ?>
 
                                             <div class="form-group">
                                                 <label class="control-label col-md-3 col-sm-3 col-xs-12" for="material">Materiais</label>
@@ -213,8 +215,8 @@ if (!empty($_POST) or ! empty($_GET)) {
                                                         WHILE ($material = $consulta->fetch(PDO::FETCH_ASSOC)):
                                                             ?>
 
-                                                            <option value="<?= $material['idGrupoMaterial'] ?>"><td><?= $material['DescricaoMat'] ?></td>
-                                                            &nbspPat:&nbsp<td><?= $material['NumPatrimonio'] ?></td>
+                                                            <option value="<?= e($material['idGrupoMaterial']) ?>"><td><?= e($material['DescricaoMat']) ?></td>
+                                                            &nbspPat:&nbsp<td><?= e($material['NumPatrimonio']) ?></td>
 
                                                             </option>
 

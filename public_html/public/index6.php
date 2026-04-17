@@ -52,7 +52,7 @@ $nome = $_SESSION['nome'];
               </div>
               <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$nome;?></h2>
+                <h2><?= e($nome) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -199,14 +199,14 @@ $nome = $_SESSION['nome'];
 					  ?>
 					  
                         <tr>
-                          <td><?=$material['dataAlteracao']?></td>
-                          <td><?=$material['DescricaoMat']?></td>
-                          <td><?=$material['QuantidadeAlt']?></td>
-                          <td><?=$material['NumPatrimonio']?></td>
-                          <td><?=$material['Descricao']?></td>
-                          <td><?=$material['NomeUsuario']?></td>
-                          <td><?=$material['Localizacao']?></td>
-                          <td><?=$material['memorandoSei']?></td>
+                          <td><?= e($material['dataAlteracao']) ?></td>
+                          <td><?= e($material['DescricaoMat']) ?></td>
+                          <td><?= e($material['QuantidadeAlt']) ?></td>
+                          <td><?= e($material['NumPatrimonio']) ?></td>
+                          <td><?= e($material['Descricao']) ?></td>
+                          <td><?= e($material['NomeUsuario']) ?></td>
+                          <td><?= e($material['Localizacao']) ?></td>
+                          <td><?= e($material['memorandoSei']) ?></td>
 						  
                         </tr>
 						

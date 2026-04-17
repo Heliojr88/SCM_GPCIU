@@ -6,8 +6,9 @@ $UsuarioLogado = $_SESSION['nome'];
 
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
-if(!empty($_POST) or !empty($_GET)){
-	 
+if(!empty($_POST)){
+	csrf_validate();
+
 $UsuarioLogado = $_SESSION['nome'];
 $idUsuario = $_SESSION['idUsuario'];
 $siape = $_SESSION['siape'];
@@ -81,7 +82,7 @@ $memorandoSei = $_POST['memorandoSei'];
               </div>
                <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$UsuarioLogado;?></h2>
+                <h2><?= e($UsuarioLogado) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -171,6 +172,7 @@ $memorandoSei = $_POST['memorandoSei'];
                     <br />
                    
 				   <form action="alteracao.php" id="materiais" name="materiais" method="POST" class="form-horizontal form-label-left">
+					<?php csrf_field(); ?>
 
 					  
 					  <div class="form-group">
@@ -184,12 +186,12 @@ $memorandoSei = $_POST['memorandoSei'];
 					  
 					      ?>
 					         
-							 <option value="<?=$material['idGrupoMaterial'].'/'.$material['Localizacao_idLocalizacao']?>">
-																			   <td><?=$material['DescricaoMat']?></td>
-							                                        (&nbsp<td><?=$material['Localizacao']?></td>
-																	)&nbspQtd:<td><?=$material['Quantidade']?></td>
-																	&nbspPat:&nbsp<td><?=$material['NumPatrimonio']?></td>
-																	&nbspSit:&nbsp<td><?=$material['SituacaoMat']?></td>
+							 <option value="<?= e($material['idGrupoMaterial'].'/'.$material['Localizacao_idLocalizacao']) ?>">
+																			   <td><?= e($material['DescricaoMat']) ?></td>
+							                                        (&nbsp<td><?= e($material['Localizacao']) ?></td>
+																	)&nbspQtd:<td><?= e($material['Quantidade']) ?></td>
+																	&nbspPat:&nbsp<td><?= e($material['NumPatrimonio']) ?></td>
+																	&nbspSit:&nbsp<td><?= e($material['SituacaoMat']) ?></td>
 														 
 							
 																	

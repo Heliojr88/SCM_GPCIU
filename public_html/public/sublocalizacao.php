@@ -6,12 +6,13 @@ $UsuarioLogado = $_SESSION['nome'];
 
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
-if(!empty($_POST) or !empty($_GET)){
-	 
+if(!empty($_POST)){
+	csrf_validate();
+
 $UsuarioLogado = $_SESSION['nome'];
 $idUsuario     = $_SESSION['idUsuario'];
 $siape         = $_SESSION['siape'];
- 		 
+
 $sublocalizacao  = $_POST['sublocalizacao'];
 $idLocalizacao   = $_POST['localizacao'];
 $tramitavel      = $_POST['tramitavel'];
@@ -83,7 +84,7 @@ else{
               </div>
                <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$UsuarioLogado;?></h2>
+                <h2><?= e($UsuarioLogado) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -173,6 +174,7 @@ else{
                     <br />
                    
                     <form action="sublocalizacao.php" id="ManterLocalizacao" name="ManterLocalizacao" method="POST" class="form-horizontal form-label-left">
+                     <?php csrf_field(); ?>
 
 					   <div class="form-group">
                         <label class="control-label col-md-3 col-sm-3 col-xs-12" for="localizacao">Localização</label>
@@ -185,7 +187,7 @@ else{
 
                               ?>
 						  
-                            <option value="<?=$localizacao['idLocalizacao']?>"><?=$localizacao['Localizacao']?></option>
+                            <option value="<?= e($localizacao['idLocalizacao']) ?>"><?= e($localizacao['Localizacao']) ?></option>
                       
                             <?php
                               ENDWHILE

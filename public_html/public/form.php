@@ -2,9 +2,10 @@
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 require __DIR__ . '/../app/bootstrap.php';
 
-if(!empty($_POST) or !empty($_GET)){
-  
-$nome   = $_POST['nome'];	 	
+if(!empty($_POST)){
+  csrf_validate();
+
+$nome   = $_POST['nome'];
 $cpf    = $_POST['cpf'];
 $email  = $_POST['email'];
 $siape  = $_POST['siape'];
@@ -202,6 +203,7 @@ if($cadastrar){
                     <br />
                    
 				   <form id="cadastro" method="POST" class="form-horizontal form-label-left">
+					<?php csrf_field(); ?>
 
                       <div class="form-group">
                         <label class="control-label col-md-3 col-sm-3 col-xs-12" for="nome">Nome Completo<span class="required">*</span>

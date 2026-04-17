@@ -6,8 +6,9 @@ error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
 $nome = $_SESSION['nome'];
 
-if(!empty($_POST) or !empty($_GET)){
-   
+if(!empty($_POST)){
+    csrf_validate();
+
     $UsuarioLogado = $_SESSION['nome'];
     $idUsuario     = $_SESSION['idUsuario'];
     $siape         = $_SESSION['siape'];
@@ -105,7 +106,7 @@ if(!empty($_POST) or !empty($_GET)){
               </div>
                <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$nome;?></h2>
+                <h2><?= e($nome) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -195,6 +196,7 @@ if(!empty($_POST) or !empty($_GET)){
                     <br />
                    
                     <form action="tramitacaoColetiva.php" id="materiais" name="materiais" method="POST" class="form-horizontal form-label-left">
+                     <?php csrf_field(); ?>
 
 				   				  
 			<div class="form-group">
@@ -209,7 +211,7 @@ if(!empty($_POST) or !empty($_GET)){
 					  
                             ?>
 						  
-                            <option value="<?=$localizacao['idLocalizacao']?>"><?=$localizacao['Localizacao']?></option>
+                            <option value="<?= e($localizacao['idLocalizacao']) ?>"><?= e($localizacao['Localizacao']) ?></option>
                       
                             <?php
                               ENDWHILE
@@ -240,7 +242,7 @@ if(!empty($_POST) or !empty($_GET)){
 
                               ?>
 						  
-                            <option value="<?=$localizacao['idLocalizacao']?>"><?=$localizacao['Localizacao']?></option>
+                            <option value="<?= e($localizacao['idLocalizacao']) ?>"><?= e($localizacao['Localizacao']) ?></option>
                       
                             <?php
                               ENDWHILE

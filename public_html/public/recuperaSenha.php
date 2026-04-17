@@ -5,8 +5,9 @@ error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
 $nome = $_SESSION['nome'] ?? '';
 
-if(!empty($_POST) or !empty($_GET)){
-	
+if(!empty($_POST)){
+	csrf_validate();
+
 $cpf    = $_POST['cpf'];
 $email  = $_POST['email'];
 $siape  = $_POST['siape'];
@@ -161,6 +162,7 @@ $recupera = $_pdo->recuperaSenha($cpf,$email,$siape,$senha);
                     <br />
                    
 				   <form action="recuperaSenha.php" id="recuperaSenha" name="recuperaSenha" method="POST" class="form-horizontal form-label-left">
+					<?php csrf_field(); ?>
 					
                         <div class="form-group">
                         <label for="email" class="control-label col-md-3 col-sm-3 col-xs-12">Email</label>

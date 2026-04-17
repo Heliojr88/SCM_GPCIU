@@ -9,6 +9,7 @@ if (isset($_GET['q']) && $_GET['q'] === 'logout') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
+    csrf_validate();
     $siape = trim((string) ($_POST['siape'] ?? ''));
     $senha = (string) ($_POST['senha'] ?? '');
 
@@ -76,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
 	  <img src="images/logo.png">
 	  </div>
             <form method="POST" action="login.php" name="login">
+              <?php csrf_field(); ?>
               <h1>SEJA BEM VINDO	</h1>
               <div>
                 <input type="text" class="form-control" name="siape" id="siape" placeholder="siape" required="*" />

@@ -62,7 +62,7 @@ if(empty($_GET)){
               </div>
               <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$nome;?></h2>
+                <h2><?= e($nome) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -109,7 +109,7 @@ if(empty($_GET)){
               <ul class="nav navbar-nav navbar-right">
                 <li class="">
                   <a href="javascript:;" class="user-profile dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
-                    <img src="images/img2.jpg" alt=""><?=$nome;?>
+                    <img src="images/img2.jpg" alt=""><?= e($nome) ?>
                     <span class=" fa fa-angle-down"></span>
                   </a>
                   <ul class="dropdown-menu dropdown-usermenu pull-right">
@@ -208,12 +208,12 @@ if(empty($_GET)){
 					  ?>
 					  
                         <tr>
-                          <td><?=$material['Quantidade']?></td>
-                          <td><?=$material['DescricaoMat']?></td>
-						  <td><?=$material['NumPatrimonio']?></td>
-                          <td><?=$material['Categoria']?></td>
-                          <td><?=$material['Localizacao']?></td>
-                          <td><?=$material['SituacaoMat']?></td>
+                          <td><?= e($material['Quantidade']) ?></td>
+                          <td><?= e($material['DescricaoMat']) ?></td>
+						  <td><?= e($material['NumPatrimonio']) ?></td>
+                          <td><?= e($material['Categoria']) ?></td>
+                          <td><?= e($material['Localizacao']) ?></td>
+                          <td><?= e($material['SituacaoMat']) ?></td>
                         </tr>
 						
 						<?php

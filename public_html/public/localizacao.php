@@ -6,7 +6,8 @@ $UsuarioLogado = $_SESSION['nome'];
 
 error_reporting(E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
-if (!empty($_POST) or ! empty($_GET)){
+if (!empty($_POST)){
+    csrf_validate();
 
     $UsuarioLogado = $_SESSION['nome'];
     $idUsuario     = $_SESSION['idUsuario'];
@@ -77,7 +78,7 @@ if (!empty($_POST) or ! empty($_GET)){
               </div>
                <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$UsuarioLogado;?></h2>
+                <h2><?= e($UsuarioLogado) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -167,6 +168,7 @@ if (!empty($_POST) or ! empty($_GET)){
                     <br />
                    
 				   <form action="localizacao.php" id="localizacao" name="localizacao" method="POST" class="form-horizontal form-label-left">
+					<?php csrf_field(); ?>
 
 					  
 					 

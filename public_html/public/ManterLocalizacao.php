@@ -6,7 +6,8 @@ $UsuarioLogado = $_SESSION['nome'];
 $nome = $_SESSION['nome'];
    
 if(!empty($_POST)){
-	  		 
+	csrf_validate();
+
 $novalocalizacao = $_POST['novalocalizacao'];
 $idLocalizacao   = $_POST['localizacao'];
 $ativo           = $_POST['ativa'];
@@ -73,7 +74,7 @@ else{
               </div>
                <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$UsuarioLogado;?></h2>
+                <h2><?= e($UsuarioLogado) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -163,6 +164,7 @@ else{
                     <br />
                    
 		<form action="ManterLocalizacao.php" id="ManterLocalizacao" name="ManterLocalizacao" method="POST" class="form-horizontal form-label-left">
+		 <?php csrf_field(); ?>
 
                     <div class="form-group">
                         <label class="control-label col-md-3 col-sm-3 col-xs-12" for="localizacao">Localização</label>
@@ -175,7 +177,7 @@ else{
 					  
 					      ?>
 						  
-                            <option value="<?=$localizacao['idLocalizacao']?>"><?=$localizacao['Localizacao']?></option>
+                            <option value="<?= e($localizacao['idLocalizacao']) ?>"><?= e($localizacao['Localizacao']) ?></option>
                       
                             <?php
                               ENDWHILE
