@@ -176,12 +176,12 @@ $sql = "SELECT  date_format(a.dataAlteracao,'%d/%m/%Y') as dataAlteracao,
 
         FROM alteracao a, material m, localizacao l, usuarios u
         WHERE a.idMaterial = m.idMaterial
-        AND (date_format(a.dataAlteracao,'%Y-%m-%d') BETWEEN '$datainicial' and '$datafinal')
+        AND (date_format(a.dataAlteracao,'%Y-%m-%d') BETWEEN ? AND ?)
         AND   a.idLocalizacao = l.idLocalizacao
         AND   a.Siape = u.Siape";
 
-$resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-$resultado->execute();
+$resultado = self::$con->prepare($sql);
+$resultado->execute([$datainicial, $datafinal]);
 
 return $resultado;
 }
@@ -327,7 +327,7 @@ function getTramitacaoData($datainicial,$datafinal) {
          AND tm.Usuarios_Siape = u.Siape
                and tm.idLocalizacaoOrigem = l.idLocalizacao
                AND tm.idLocalizacaoDestino = l2.idLocalizacao
-               AND (date_format(tm.DataHora,'%Y-%m-%d') BETWEEN '$datainicial' and '$datafinal')
+               AND (date_format(tm.DataHora,'%Y-%m-%d') BETWEEN ? AND ?)
       GROUP by
                tm.MotivoTramitacao,
          m.DescricaoMat,
@@ -343,8 +343,8 @@ function getTramitacaoData($datainicial,$datafinal) {
 
 
 
-    $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-    $resultado->execute();
+    $resultado = self::$con->prepare($sql);
+    $resultado->execute([$datainicial, $datafinal]);
 
     return $resultado;
   }
@@ -377,10 +377,10 @@ function getLocalizacao($idLocalizacao) {
 
     $sql = "SELECT idLocalizacao, Localizacao
         FROM localizacao
-        where idLocalizacao = $idLocalizacao";
+        where idLocalizacao = ?";
 
-    $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-    $resultado->execute();
+    $resultado = self::$con->prepare($sql);
+    $resultado->execute([$idLocalizacao]);
 
     return $resultado;
   }
@@ -392,11 +392,11 @@ function getSubLocalizacao($idLocalizacao) {
                                subLocalizacao,
                                localizacao_idLocalizacao
                         FROM sublocalizacao
-                        WHERE localizacao_idLocalizacao = $idLocalizacao
+                        WHERE localizacao_idLocalizacao = ?
             order by subLocalizacao";
 
-    $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-    $resultado->execute();
+    $resultado = self::$con->prepare($sql);
+    $resultado->execute([$idLocalizacao]);
 
     return $resultado;
   }
@@ -494,7 +494,7 @@ function getMaterialAll($idLocalizacao) {
         and m.TipoMaterial_idTipoMaterial = tm.idTipoMaterial
         and m.Categoria_idCategoria = c.idCategoria
         and m.Situacaomat_idSituacao = sm.idSituacaoMat
-        and m.Localizacao_idLocalizacao = $idLocalizacao
+        and m.Localizacao_idLocalizacao = ?
                                 and m.sublocalizacao_idSubLocalizacao = sl.idSubLocalizacao
 
       GROUP by
@@ -511,8 +511,8 @@ function getMaterialAll($idLocalizacao) {
 
 
 
-    $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-    $resultado->execute();
+    $resultado = self::$con->prepare($sql);
+    $resultado->execute([$idLocalizacao]);
 
     return $resultado;
   }
@@ -535,8 +535,8 @@ function getMaterialSubLocal($idLocalizacao,$sublocalizacao) {
         and m.TipoMaterial_idTipoMaterial = tm.idTipoMaterial
         and m.Categoria_idCategoria = c.idCategoria
         and m.Situacaomat_idSituacao = sm.idSituacaoMat
-        and m.Localizacao_idLocalizacao = $idLocalizacao
-                                and m.sublocalizacao_idSubLocalizacao = $sublocalizacao
+        and m.Localizacao_idLocalizacao = ?
+                                and m.sublocalizacao_idSubLocalizacao = ?
                                 and m.sublocalizacao_idSubLocalizacao = sl.idSubLocalizacao
 
       GROUP by
@@ -552,8 +552,8 @@ function getMaterialSubLocal($idLocalizacao,$sublocalizacao) {
 
 
 
-    $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-    $resultado->execute();
+    $resultado = self::$con->prepare($sql);
+    $resultado->execute([$idLocalizacao, $sublocalizacao]);
 
     return $resultado;
   }
@@ -595,7 +595,7 @@ function getMaterialCode($idGrupoMaterial) {
         and m.TipoMaterial_idTipoMaterial = tm.idTipoMaterial
         and m.Categoria_idCategoria = c.idCategoria
         and m.Situacaomat_idSituacao = sm.idSituacaoMat
-        and m.idGrupoMaterial = $idGrupoMaterial
+        and m.idGrupoMaterial = ?
 
       GROUP by
             m.DescricaoMat,
@@ -609,8 +609,8 @@ function getMaterialCode($idGrupoMaterial) {
 
 
 
-    $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-    $resultado->execute();
+    $resultado = self::$con->prepare($sql);
+    $resultado->execute([$idGrupoMaterial]);
 
     return $resultado;
   }
@@ -620,10 +620,10 @@ function getMaster($siape) {
 
     $sql = "SELECT master,siape FROM usuarios
                          where master = 1
-                         and siape = $siape";
+                         and siape = ?";
 
-    $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-    $resultado->execute();
+    $resultado = self::$con->prepare($sql);
+    $resultado->execute([$siape]);
 
     return $resultado;
   }
@@ -688,9 +688,9 @@ private function atualizaSenhaHash($siape, $novoHash){
 function insereAlteracao($descricao,$idMaterial,$siape,$idLocalizacao,$quantidade,$memorandoSei){
 
     $sql = "INSERT INTO alteracao(Descricao,idMaterial,Siape,idLocalizacao,QuantidadeAlt,memorandoSei)
-                                    VALUES('$descricao',$idMaterial,$siape,$idLocalizacao,$quantidade,$memorandoSei)";
-        $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-        $resultado->execute();
+                                    VALUES(?, ?, ?, ?, ?, ?)";
+        $resultado = self::$con->prepare($sql);
+        $resultado->execute([$descricao, $idMaterial, $siape, $idLocalizacao, $quantidade, $memorandoSei]);
 
         if ($resultado) {
             $mat = $this->getMaterialCode($idMaterial);
@@ -729,131 +729,111 @@ function insereAlteracao($descricao,$idMaterial,$siape,$idLocalizacao,$quantidad
 //função para inserir novos materias
 function insereMaterial($descricao,$quantidade,$patrimonio,$categoria,$localizacao,$tipomaterial,$nome_imagem,$siape,$idSubLocalizacao){
 
-                if($patrimonio != ''){
-                    $sql = "SELECT * FROM material WHERE NumPatrimonio = '$patrimonio'";
-                    $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-                    $resultado->execute();
-                    $nResultado = $resultado->fetchColumn();
-
-                    if($nResultado > 1){
-                            return 0; // erro 0 patrimonio já cadastrado
-                    }
-                }
-                else{
-                    $sql = "SELECT * FROM material WHERE descricaoMat = '$descricao'";
-                    $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-                    $resultado->execute();
-                    $nResultado = $resultado->fetchColumn();
-
-                    if($nResultado > 1){
-                            return 0; // erro 0 material já cadastrado
-                    }
-                }
-
-    try{
-
-
-                        if(empty($idSubLocalizacao)){
-                            $idSubLocalizacao = 0;
-                        }
-
-                        /*O campo NumPatrimonio no BD é null por padrão e unico,
-                        a inserção de uma string vazia estava impossibilitando o cadastro do material.
-                        a validação a seguir foi inserida para tratar isso, não inserindo valor para NumPatrimonio
-                        quando o valor inserido no formuário HTML for uma string vazia*/
-                        if($patrimonio == ''){
-                              $sql = "INSERT into material (categoria_idcategoria, descricaoMat, Localizacao_idLocalizacao, Quantidade,Situacaomat_idSituacao,Usuarios_Siape, TipoMaterial_idTipoMaterial,fotoMaterial,sublocalizacao_idSubLocalizacao)
-                              VALUES($categoria,'$descricao',$localizacao,1,1,$siape,$tipomaterial,'$nome_imagem','$idSubLocalizacao')";
-                        }else{
-                              $sql = "INSERT into material (categoria_idcategoria, descricaoMat, Localizacao_idLocalizacao, NumPatrimonio, Quantidade,Situacaomat_idSituacao,Usuarios_Siape, TipoMaterial_idTipoMaterial,fotoMaterial,sublocalizacao_idSubLocalizacao)
-                              VALUES($categoria,'$descricao',$localizacao,'$patrimonio',1,1,$siape,$tipomaterial,'$nome_imagem','$idSubLocalizacao')";
-                        }
-
-
-      $exec = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-      $exec->execute();
-      $ultimoid = self::$con->lastInsertId();
-      $sql1 = "update material set idGrupoMaterial = $ultimoid where idMaterial = $ultimoid";
-      $exec = self::$con->prepare($sql1) OR trigger_error($con->error, E_USER_ERROR);
-      $exec->execute();
-
-      $quantidade--;
-
-      for($i=0;$i<$quantidade;$i++){
-
-        $sql2 = "INSERT into material (idGrupoMaterial, categoria_idcategoria, descricaoMat, Localizacao_idLocalizacao, NumPatrimonio, Quantidade,Situacaomat_idSituacao,Usuarios_Siape, TipoMaterial_idTipoMaterial,fotoMaterial,sublocalizacao_idSubLocalizacao)
-          VALUES('$ultimoid','$categoria','$descricao',$localizacao,'$patrimonio',1,1,$siape,$tipomaterial,'$nome_imagem','$idSublocalizacao')";
-
-        $exec = self::$con->prepare($sql2) OR trigger_error($con->error, E_USER_ERROR);
-        $exec->execute();
-
-      }
-      return true;
-    }
-    catch(Exception $e){
-        die("erro ao cadastrar, erro ".$e->getMessage());
+    if ($patrimonio != '') {
+        $stmt = self::$con->prepare("SELECT COUNT(*) FROM material WHERE NumPatrimonio = ?");
+        $stmt->execute([$patrimonio]);
+        if ((int) $stmt->fetchColumn() > 1) {
+            return 0; // patrimonio já cadastrado
+        }
+    } else {
+        $stmt = self::$con->prepare("SELECT COUNT(*) FROM material WHERE descricaoMat = ?");
+        $stmt->execute([$descricao]);
+        if ((int) $stmt->fetchColumn() > 1) {
+            return 0; // material já cadastrado
+        }
     }
 
-  }
+    try {
+        if (empty($idSubLocalizacao)) {
+            $idSubLocalizacao = 0;
+        }
+
+        /* NumPatrimonio é NULL por padrão e único; string vazia impede o cadastro.
+           Para patrimônio vazio, omitimos a coluna. */
+        if ($patrimonio == '') {
+            $sql = "INSERT INTO material
+                        (categoria_idcategoria, descricaoMat, Localizacao_idLocalizacao,
+                         Quantidade, Situacaomat_idSituacao, Usuarios_Siape,
+                         TipoMaterial_idTipoMaterial, fotoMaterial, sublocalizacao_idSubLocalizacao)
+                    VALUES (?, ?, ?, 1, 1, ?, ?, ?, ?)";
+            $params = [$categoria, $descricao, $localizacao, $siape, $tipomaterial, $nome_imagem, $idSubLocalizacao];
+        } else {
+            $sql = "INSERT INTO material
+                        (categoria_idcategoria, descricaoMat, Localizacao_idLocalizacao,
+                         NumPatrimonio, Quantidade, Situacaomat_idSituacao, Usuarios_Siape,
+                         TipoMaterial_idTipoMaterial, fotoMaterial, sublocalizacao_idSubLocalizacao)
+                    VALUES (?, ?, ?, ?, 1, 1, ?, ?, ?, ?)";
+            $params = [$categoria, $descricao, $localizacao, $patrimonio, $siape, $tipomaterial, $nome_imagem, $idSubLocalizacao];
+        }
+
+        $exec = self::$con->prepare($sql);
+        $exec->execute($params);
+        $ultimoid = self::$con->lastInsertId();
+
+        $upd = self::$con->prepare("UPDATE material SET idGrupoMaterial = ? WHERE idMaterial = ?");
+        $upd->execute([$ultimoid, $ultimoid]);
+
+        $quantidade--;
+
+        $insertClone = self::$con->prepare(
+            "INSERT INTO material
+                (idGrupoMaterial, categoria_idcategoria, descricaoMat, Localizacao_idLocalizacao,
+                 NumPatrimonio, Quantidade, Situacaomat_idSituacao, Usuarios_Siape,
+                 TipoMaterial_idTipoMaterial, fotoMaterial, sublocalizacao_idSubLocalizacao)
+             VALUES (?, ?, ?, ?, ?, 1, 1, ?, ?, ?, ?)"
+        );
+        for ($i = 0; $i < $quantidade; $i++) {
+            $insertClone->execute([
+                $ultimoid, $categoria, $descricao, $localizacao,
+                ($patrimonio == '' ? null : $patrimonio),
+                $siape, $tipomaterial, $nome_imagem, $idSubLocalizacao,
+            ]);
+        }
+        return true;
+    } catch (PDOException $e) {
+        error_log('insereMaterial falhou: ' . $e->getMessage());
+        return false;
+    }
+}
 
 //função para inserir novos itens a um material
 function insereItensMaterial($quantidade,$localizacao,$nome_imagem,$siape,$idGrupoMaterial){
 
-//recupera a categoria do material
-$sql = "select categoria_idcategoria
-        from material m where m.idGrupoMaterial = $idGrupoMaterial limit 1";
-$resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-$resultado->execute();
-$result = $resultado->fetch(PDO::FETCH_ASSOC);
-$categoria = $result['categoria_idcategoria'];
+    $stmt = self::$con->prepare(
+        "SELECT categoria_idcategoria, TipoMaterial_idTipoMaterial, descricaoMat, NumPatrimonio
+         FROM material
+         WHERE idGrupoMaterial = ?
+         LIMIT 1"
+    );
+    $stmt->execute([$idGrupoMaterial]);
+    $mat = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$mat) {
+        return false;
+    }
+    $categoria    = $mat['categoria_idcategoria'];
+    $tipomaterial = $mat['TipoMaterial_idTipoMaterial'];
+    $descricao    = $mat['descricaoMat'];
 
-//recupera o tipo do material
-$sql = "select  TipoMaterial_idTipoMaterial
-        from material m where m.idGrupoMaterial = $idGrupoMaterial limit 1";
-$resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-$resultado->execute();
-$result = $resultado->fetch(PDO::FETCH_ASSOC);
-$tipomaterial = $result['TipoMaterial_idTipoMaterial'];
+    try {
+        $insert = self::$con->prepare(
+            "INSERT INTO material
+                (idGrupoMaterial, categoria_idcategoria, descricaoMat, Localizacao_idLocalizacao,
+                 Quantidade, Situacaomat_idSituacao, Usuarios_Siape,
+                 TipoMaterial_idTipoMaterial, fotoMaterial, sublocalizacao_idSubLocalizacao)
+             VALUES (?, ?, ?, ?, 1, 1, ?, ?, ?, 0)"
+        );
 
-//recupera a descrição do material
-$sql = "select descricaoMat from material m where m.idGrupoMaterial = $idGrupoMaterial limit 1";
-$resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-$resultado->execute();
-$result = $resultado->fetch(PDO::FETCH_ASSOC);
-$descricao = $result['descricaoMat'];
-
-//recupera o patrimônio do material
-$sql = "select NumPatrimonio from material m where m.idGrupoMaterial = $idGrupoMaterial limit 1";
-$resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-$resultado->execute();
-$result = $resultado->fetch(PDO::FETCH_ASSOC);
-$patrimonio = $result['NumPatrimonio'];
-
-
-try{
-        $sql = "INSERT into material (idGrupoMaterial,categoria_idcategoria, descricaoMat, Localizacao_idLocalizacao, Quantidade,Situacaomat_idSituacao,Usuarios_Siape, TipoMaterial_idTipoMaterial,fotoMaterial,sublocalizacao_idSubLocalizacao)
-                  VALUES($idGrupoMaterial,$categoria,'$descricao',$localizacao,1,1,$siape,$tipomaterial,'$nome_imagem',0)";
-
-        $exec = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-        $exec->execute();
-
-        $quantidade--;
-
-    for($i=0;$i<$quantidade;$i++){
-
-                $sql2 = "INSERT into material (idGrupoMaterial,categoria_idcategoria, descricaoMat, Localizacao_idLocalizacao, Quantidade,Situacaomat_idSituacao,Usuarios_Siape, TipoMaterial_idTipoMaterial,fotoMaterial,sublocalizacao_idSubLocalizacao)
-                  VALUES($idGrupoMaterial,$categoria,'$descricao',$localizacao,1,1,$siape,$tipomaterial,'$nome_imagem',0)";
-
-                $exec = self::$con->prepare($sql2) OR trigger_error($con->error, E_USER_ERROR);
-                $exec->execute();
-
+        for ($i = 0; $i < $quantidade; $i++) {
+            $insert->execute([
+                $idGrupoMaterial, $categoria, $descricao, $localizacao,
+                $siape, $tipomaterial, $nome_imagem,
+            ]);
         }
         return true;
-}
-catch(Exception $e){
-    die("erro ao cadastrar, erro ".$e->getMessage());
-}
-
+    } catch (PDOException $e) {
+        error_log('insereItensMaterial falhou: ' . $e->getMessage());
+        return false;
+    }
 }
 
 //função para enviar email
@@ -861,10 +841,10 @@ function enviaEmail($siape,$email_assunto,$mensagem){
 
   $sql = "SELECT email,nomeUsuario
       FROM usuarios
-      where siape = $siape";
+      where siape = ?";
 
-    $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-    $resultado->execute();
+    $resultado = self::$con->prepare($sql);
+    $resultado->execute([$siape]);
     $master = $resultado->fetch(PDO::FETCH_ASSOC);
 
     //email
@@ -914,22 +894,15 @@ function enviaEmail($siape,$email_assunto,$mensagem){
 
 //utilizada para ativar usuários (ativausuario.php)
 function ativaUsuario($ativar,$siapeUsuario){
-     $sql = "UPDATE usuarios SET ativo = $ativar
-                            WHERE siape = $siapeUsuario";
-
-                try{
-
-                    $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-                    $resultado->execute();
-
-    return true;
+    try {
+        $stmt = self::$con->prepare("UPDATE usuarios SET ativo = ? WHERE siape = ?");
+        $stmt->execute([$ativar, $siapeUsuario]);
+        return true;
+    } catch (PDOException $e) {
+        error_log('ativaUsuario falhou: ' . $e->getMessage());
+        return 0;
     }
-    catch(Exception $e){
-        die("erro ao cadastrar, erro ".$e->getMessage());
-                    return 0;
-    }
-
-  }
+}
 
 //utilizada para recuperar senha
 function recuperaSenha($cpf,$email,$siape,$senha){
@@ -961,399 +934,368 @@ function recuperaSenha($cpf,$email,$siape,$senha){
 //utilizada para ativar materiais (ativamaterial.php)
 function ativaMaterial($idGrupoMat,$idLocal,$alteracao,$quantidade,$memorando,$idUsuario,$siape){
 
-    $idBaixados = "select idMaterial  from material
-                    where idGrupoMaterial = $idGrupoMat
-                    and localizacao_idlocalizacao = $idLocal
-                    and Situacaomat_idSituacao = 2
-                    order BY idMaterial  desc limit $quantidade";
+    // Force numeric for values used in LIMIT (não bindable em prepared statements)
+    $idGrupoMat = (int) $idGrupoMat;
+    $idLocal    = (int) $idLocal;
+    $quantidade = (int) $quantidade;
 
-    $resultado = self::$con->prepare($idBaixados) OR trigger_error($con->error, E_USER_ERROR);
-    $resultado->execute();
-
-    $baixados;
-    $i = 0;
-    while($t = $resultado->fetch( PDO::FETCH_ASSOC )){
-    $baixados .= $t['idMaterial'] . ",";
+    if ($quantidade <= 0) {
+        return false;
     }
-    $baixados = substr($baixados, 0, -1);
 
-    $query = "INSERT INTO baixamat
-                        (motivoBaixa,
-                         memorandoBaixa,
-                         Usuarios_idUsuario,
-                         Usuarios_Siape,
-                         material_idMaterial,
-                         idBaixados,
-                         qtdBaixa,
-                         situacaomat_idSituacaoMat)
-                         VALUES ('$alteracao','$memorando',$idUsuario,$siape,$idGrupoMat,'$baixados',$quantidade,1)";
+    $stmt = self::$con->prepare(
+        "SELECT idMaterial FROM material
+         WHERE idGrupoMaterial = ? AND localizacao_idlocalizacao = ? AND Situacaomat_idSituacao = 2
+         ORDER BY idMaterial DESC LIMIT $quantidade"
+    );
+    $stmt->execute([$idGrupoMat, $idLocal]);
 
-    $query2 = "UPDATE material set Situacaomat_idSituacao = 1
-              where idMaterial in(
-                  SELECT * from (
-                                    select idMaterial  from material
-                                    where idGrupoMaterial = $idGrupoMat
-                                    and localizacao_idlocalizacao = $idLocal
-                                    and Situacaomat_idSituacao = 2
-                                    order BY idMaterial  desc limit $quantidade
-                               )
-                            as t);";
+    $ids = [];
+    while ($t = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $ids[] = (int) $t['idMaterial'];
+    }
+    $baixados = implode(',', $ids);
 
-    $queryQtd = "SELECT COUNT(Quantidade) as Quantidade FROM material
-                where idGrupoMaterial = $idGrupoMat
-                                                and localizacao_idlocalizacao = $idLocal
-                                                and Situacaomat_idSituacao = 2
-                                                order BY idMaterial  desc limit $quantidade";
-    $resultado = self::$con->prepare($queryQtd) OR trigger_error($con->error, E_USER_ERROR);
-    $resultado->execute();
-    $mat2 = $resultado->fetch(PDO::FETCH_ASSOC);
-    $verifica = $mat2['Quantidade'];
+    // Verifica se há material suficiente disponível
+    $q = self::$con->prepare(
+        "SELECT COUNT(Quantidade) AS Quantidade FROM material
+         WHERE idGrupoMaterial = ? AND localizacao_idlocalizacao = ? AND Situacaomat_idSituacao = 2"
+    );
+    $q->execute([$idGrupoMat, $idLocal]);
+    $verifica = (int) ($q->fetch(PDO::FETCH_ASSOC)['Quantidade'] ?? 0);
 
-    if (($quantidade > $verifica) || ($quantidade <= 0)) {
-        return FALSE; //quantidade digitada é maoir do que a quantidade disponível
+    if ($quantidade > $verifica) {
+        return false;
     }
 
     try {
-    $resultado = self::$con->prepare($query) OR trigger_error($con->error, E_USER_ERROR);
-    $resultado->execute();
-    $resultado2 = self::$con->prepare($query2) OR trigger_error($con->error, E_USER_ERROR);
-    $resultado2->execute();
+        self::$con->beginTransaction();
 
-      return true;
-    }
-    catch (Exception $e){
-      return false;
+        $ins = self::$con->prepare(
+            "INSERT INTO baixamat
+                (motivoBaixa, memorandoBaixa, Usuarios_idUsuario, Usuarios_Siape,
+                 material_idMaterial, idBaixados, qtdBaixa, situacaomat_idSituacaoMat)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 1)"
+        );
+        $ins->execute([$alteracao, $memorando, $idUsuario, $siape, $idGrupoMat, $baixados, $quantidade]);
+
+        if (!empty($ids)) {
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $upd = self::$con->prepare(
+                "UPDATE material SET Situacaomat_idSituacao = 1 WHERE idMaterial IN ($placeholders)"
+            );
+            $upd->execute($ids);
+        }
+
+        self::$con->commit();
+        return true;
+    } catch (PDOException $e) {
+        if (self::$con->inTransaction()) {
+            self::$con->rollBack();
+        }
+        error_log('ativaMaterial falhou: ' . $e->getMessage());
+        return false;
     }
 }
 
-//utilizada para ativar materiais (ativamaterial.php)
+//utilizada para dar baixa em materiais (baixamaterial.php)
 function baixaMaterial($idGrupoMat,$idLocal,$alteracao,$quantidade,$memorando,$idUsuario,$siape){
 
-    $idAtivados = "select idMaterial  from material
-                    where idGrupoMaterial = $idGrupoMat
-                    and localizacao_idlocalizacao = $idLocal
-                    and Situacaomat_idSituacao = 1
-                    order BY idMaterial  desc limit $quantidade";
+    $idGrupoMat = (int) $idGrupoMat;
+    $idLocal    = (int) $idLocal;
+    $quantidade = (int) $quantidade;
 
-    $resultado = self::$con->prepare($idAtivados) OR trigger_error($con->error, E_USER_ERROR);
-    $resultado->execute();
-
-    $baixados;
-    $i = 0;
-    while($t = $resultado->fetch( PDO::FETCH_ASSOC )){
-    $baixados .= $t['idMaterial'] . ",";
+    if ($quantidade <= 0) {
+        return false;
     }
-    $baixados = substr($baixados, 0, -1);
 
-    $query = "INSERT INTO baixamat
-                        (motivoBaixa,
-                         memorandoBaixa,
-                         Usuarios_idUsuario,
-                         Usuarios_Siape,
-                         material_idMaterial,
-                         idBaixados,
-                         qtdBaixa,
-                         situacaomat_idSituacaoMat)
-                         VALUES ('$alteracao','$memorando',$idUsuario,$siape,$idGrupoMat,'$baixados',$quantidade,2)";
+    $stmt = self::$con->prepare(
+        "SELECT idMaterial FROM material
+         WHERE idGrupoMaterial = ? AND localizacao_idlocalizacao = ? AND Situacaomat_idSituacao = 1
+         ORDER BY idMaterial DESC LIMIT $quantidade"
+    );
+    $stmt->execute([$idGrupoMat, $idLocal]);
 
-    $query2 = "UPDATE material set Situacaomat_idSituacao = 2
-              where idMaterial in(
-                  SELECT * from (
-                                    select idMaterial  from material
-                                    where idGrupoMaterial = $idGrupoMat
-                                    and localizacao_idlocalizacao = $idLocal
-                                    and Situacaomat_idSituacao = 1
-                                    order BY idMaterial  desc limit $quantidade
-                               )
-                            as t);";
+    $ids = [];
+    while ($t = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $ids[] = (int) $t['idMaterial'];
+    }
+    $baixados = implode(',', $ids);
 
-    $queryQtd = "SELECT COUNT(Quantidade) as Quantidade FROM material
-                where idGrupoMaterial = $idGrupoMat
-                                                and localizacao_idlocalizacao = $idLocal
-                                                and Situacaomat_idSituacao = 1
-                                                order BY idMaterial  desc limit $quantidade";
-    $resultado = self::$con->prepare($queryQtd) OR trigger_error($con->error, E_USER_ERROR);
-    $resultado->execute();
-    $mat2 = $resultado->fetch(PDO::FETCH_ASSOC);
-    $verifica = $mat2['Quantidade'];
+    $q = self::$con->prepare(
+        "SELECT COUNT(Quantidade) AS Quantidade FROM material
+         WHERE idGrupoMaterial = ? AND localizacao_idlocalizacao = ? AND Situacaomat_idSituacao = 1"
+    );
+    $q->execute([$idGrupoMat, $idLocal]);
+    $verifica = (int) ($q->fetch(PDO::FETCH_ASSOC)['Quantidade'] ?? 0);
 
-    if (($quantidade > $verifica) || ($quantidade <= 0)) {
-        return FALSE; //quantidade digitada é maoir do que a quantidade disponível
+    if ($quantidade > $verifica) {
+        return false;
     }
 
     try {
-            $resultado = self::$con->prepare($query) OR trigger_error($con->error, E_USER_ERROR);
-            $resultado->execute();
-            $resultado2 = self::$con->prepare($query2) OR trigger_error($con->error, E_USER_ERROR);
-            $resultado2->execute();
+        self::$con->beginTransaction();
 
-      return true;
-    }
-    catch (Exception $e){
-      return false;
+        $ins = self::$con->prepare(
+            "INSERT INTO baixamat
+                (motivoBaixa, memorandoBaixa, Usuarios_idUsuario, Usuarios_Siape,
+                 material_idMaterial, idBaixados, qtdBaixa, situacaomat_idSituacaoMat)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 2)"
+        );
+        $ins->execute([$alteracao, $memorando, $idUsuario, $siape, $idGrupoMat, $baixados, $quantidade]);
+
+        if (!empty($ids)) {
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $upd = self::$con->prepare(
+                "UPDATE material SET Situacaomat_idSituacao = 2 WHERE idMaterial IN ($placeholders)"
+            );
+            $upd->execute($ids);
+        }
+
+        self::$con->commit();
+        return true;
+    } catch (PDOException $e) {
+        if (self::$con->inTransaction()) {
+            self::$con->rollBack();
+        }
+        error_log('baixaMaterial falhou: ' . $e->getMessage());
+        return false;
     }
 }
 
 //manter as localizações
 function manterLocalizacao($novalocalizacao,$idLocalizacao,$ativo){
 
-            //verifica se já existe essa localização
-            $sql = "SELECT * FROM localizacao WHERE Localizacao = '$novalocalizacao' and idLocalizacao != $idLocalizacao";
-            $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-            $resultado->execute();
-            $nResultado = $resultado->fetchColumn();
-
-            if($nResultado){
-                return 0; // erro 0 localização já cadastrada
-            }
-            else{
-                $query = "UPDATE localizacao
-                               SET Localizacao = '$novalocalizacao',
-                                   ativo = $ativo
-                               WHERE idLocalizacao = $idLocalizacao";
-                try{
-
-                    $resultado = self::$con->prepare($query) OR trigger_error($con->error, E_USER_ERROR);
-                    $resultado->execute();
-                    return true;//localização alterada com sucesso!
+    $stmt = self::$con->prepare(
+        "SELECT COUNT(*) FROM localizacao WHERE Localizacao = ? AND idLocalizacao != ?"
+    );
+    $stmt->execute([$novalocalizacao, $idLocalizacao]);
+    if ((int) $stmt->fetchColumn() > 0) {
+        return 0; // localização já cadastrada
     }
-    catch(Exception $e){
-        die("erro ao criar a localização, erro ".$e->getMessage());
-                    return FALSE;//erro ao alterar localização
 
+    try {
+        $upd = self::$con->prepare(
+            "UPDATE localizacao SET Localizacao = ?, ativo = ? WHERE idLocalizacao = ?"
+        );
+        $upd->execute([$novalocalizacao, $ativo, $idLocalizacao]);
+        return true;
+    } catch (PDOException $e) {
+        error_log('manterLocalizacao falhou: ' . $e->getMessage());
+        return false;
     }
-            }
 }
 
 //manter os materiais
 function manterMaterial($descricao,$patrimonio,$categoria,$tipomaterial,$idGrupoMaterial,$nome_imagem,$siape){
 
-    //verifica se já existe esse material
-    $sql = "SELECT * FROM material
-            WHERE idGrupoMaterial != $idGrupoMaterial
-            and idGrupoMaterial  in(
-            SELECT idGrupoMaterial
-            FROM material
-            where NumPatrimonio = $patrimonio
-            or descricaoMat = '$descricao')";
-    $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-    $resultado->execute();
-    $nResultado = $resultado->fetchColumn();
-
-    if($nResultado){
-        return 0; // erro 0 material já cadastrada
+    $stmt = self::$con->prepare(
+        "SELECT COUNT(*) FROM material
+         WHERE idGrupoMaterial != ?
+         AND idGrupoMaterial IN (
+             SELECT idGrupoMaterial FROM (
+                 SELECT idGrupoMaterial FROM material
+                 WHERE NumPatrimonio = ? OR descricaoMat = ?
+             ) AS t
+         )"
+    );
+    $stmt->execute([$idGrupoMaterial, $patrimonio, $descricao]);
+    if ((int) $stmt->fetchColumn() > 0) {
+        return 0; // material já cadastrado
     }
-    else{
-            $query = "UPDATE material
-                      SET DescricaoMat ='$descricao',
-                          NumPatrimonio ='$patrimonio',
-                          TipoMaterial_idTipoMaterial =$tipomaterial,
-                          Categoria_idCategoria = $categoria,
-                          FotoMaterial = '" . $nome_imagem . "',
-                          Usuarios_Siape = $siape
-                    WHERE idGrupoMaterial = $idGrupoMaterial";
-        try{
 
-            $resultado = self::$con->prepare($query) OR trigger_error($con->error, E_USER_ERROR);
-            $resultado->execute();
-            return true;//localização alterada com sucesso!
-        }
-        catch(Exception $e){
-            die("erro ao criar a localização, erro ".$e->getMessage());
-            return FALSE;//erro ao alterar localização
-
-        }
+    try {
+        $upd = self::$con->prepare(
+            "UPDATE material
+             SET DescricaoMat = ?,
+                 NumPatrimonio = ?,
+                 TipoMaterial_idTipoMaterial = ?,
+                 Categoria_idCategoria = ?,
+                 FotoMaterial = ?,
+                 Usuarios_Siape = ?
+             WHERE idGrupoMaterial = ?"
+        );
+        $upd->execute([$descricao, $patrimonio, $tipomaterial, $categoria, $nome_imagem, $siape, $idGrupoMaterial]);
+        return true;
+    } catch (PDOException $e) {
+        error_log('manterMaterial falhou: ' . $e->getMessage());
+        return false;
     }
 }
 
 //tramita os materias
 function tramitaMaterial($origem,$destino,$quantidade,$idmaterial,$motivo,$sublocalizacao,$siape,$idUsuario){
 
-            //separa os valores ID Sub Localização e ID GRUPO MATERIAL
-            $posicao = strpos($idmaterial, '/');
+    // separa "idGrupoMaterial/idSubLocalizacao"
+    $posicao  = strpos($idmaterial, '/');
+    $idSubLoc = (int) substr($idmaterial, $posicao + 1, 4);
+    $idMat    = (int) substr($idmaterial, 0, $posicao);
 
-            //print_r ($id.": ");
-            // ID Sub Localização
-            $idSubLoc = substr($idmaterial, $posicao + 1, 4);
+    $origem     = (int) $origem;
+    $quantidade = (int) $quantidade;
 
-            // ID GRUPO MATERIAL
-            $idMat = substr($idmaterial, 0, $posicao);
+    if ($quantidade <= 0) {
+        return false;
+    }
 
-            $query = "SELECT COUNT(Quantidade) FROM material WHERE idGrupoMaterial = $idMat
-                and localizacao_idlocalizacao = $origem
-                and sublocalizacao_idSubLocalizacao = $idSubLoc";
-            $resultado = self::$con->prepare($query) OR trigger_error($con->error, E_USER_ERROR);
-            $resultado->execute();
-            $nResultado = $resultado->fetchColumn();
+    $stmt = self::$con->prepare(
+        "SELECT COUNT(Quantidade) FROM material
+         WHERE idGrupoMaterial = ?
+         AND localizacao_idlocalizacao = ?
+         AND sublocalizacao_idSubLocalizacao = ?"
+    );
+    $stmt->execute([$idMat, $origem, $idSubLoc]);
+    $nResultado = (int) $stmt->fetchColumn();
 
-            if (($quantidade > $nResultado) || ($quantidade <= 0)) {
-                return false;
-            }
-            else {
+    if ($quantidade > $nResultado) {
+        return false;
+    }
 
-                $idTramitados = "select idMaterial  from material
-                            where idGrupoMaterial = $idMat
-                            and localizacao_idlocalizacao = $origem
-                            and sublocalizacao_idSubLocalizacao = $idSubLoc
-                         order BY idMaterial  desc limit $quantidade";
+    $stmt = self::$con->prepare(
+        "SELECT idMaterial FROM material
+         WHERE idGrupoMaterial = ?
+         AND localizacao_idlocalizacao = ?
+         AND sublocalizacao_idSubLocalizacao = ?
+         ORDER BY idMaterial DESC LIMIT $quantidade"
+    );
+    $stmt->execute([$idMat, $origem, $idSubLoc]);
 
-                $resultado = self::$con->prepare($idTramitados) OR trigger_error($con->error, E_USER_ERROR);
-                $resultado->execute();
-                $tramitados;
-                $i = 0;
+    $ids = [];
+    while ($t = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $ids[] = (int) $t['idMaterial'];
+    }
+    $tramitados = implode(',', $ids);
 
-                while($t = $resultado->fetch( PDO::FETCH_ASSOC )){
-                    $tramitados .= $t['idMaterial'] . ",";
-                }
-                $tramitados = substr($tramitados, 0, -1);
+    try {
+        self::$con->beginTransaction();
 
-                $query = "UPDATE material set Localizacao_idLocalizacao = '$destino',
-                                       sublocalizacao_idSubLocalizacao = '$sublocalizacao'
-                                 where idMaterial in(
-                                SELECT * from (
-                                                select idMaterial  from material
-                                                        where idGrupoMaterial = $idMat
-                                                        and localizacao_idlocalizacao = $origem
-                                                        and sublocalizacao_idSubLocalizacao = $idSubLoc
-                                                        order BY idMaterial  desc limit $quantidade
-                                               )
-                                as t)";
-
-                $query2 = "INSERT INTO tramitacaomat
-                             (MotivoTramitacao,
-                             Material_idMaterial,
-                             Usuarios_idUsuario,
-                             Usuarios_Siape,
-                             idLocalizacaoOrigem,
-                             idLocalizacaoDestino,
-                             Quantidade,
-                             idMaterialTramitados,
-                             sublocalizacao_idSubLocalizacao)
-                             VALUES ('$motivo',$idMat,$idUsuario,$siape,$origem,$destino,$quantidade,'$tramitados',$sublocalizacao)";
-
-                try {
-                        //tramita o material
-                        $tramitar = self::$con->prepare($query) OR trigger_error($con->error, E_USER_ERROR);
-                        $tramitar->execute();
-
-                        //faz um insert na tabela tramitacaomat
-                        $tramitacaomat = self::$con->prepare($query2) OR trigger_error($con->error, E_USER_ERROR);
-                        $tramitacaomat->execute();
-
-                        return TRUE;
-                }
-                catch (Exception $e){
-                        return false;
-                }
-            }
+        if (!empty($ids)) {
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $upd = self::$con->prepare(
+                "UPDATE material
+                 SET Localizacao_idLocalizacao = ?, sublocalizacao_idSubLocalizacao = ?
+                 WHERE idMaterial IN ($placeholders)"
+            );
+            $upd->execute(array_merge([$destino, $sublocalizacao], $ids));
         }
 
-//Verifica se uma sublocalização é portátil, tramitável (bolsa, caixa, case, etc...)
-function eTramitavel($idSublocalizacao){
-    $texto = "SELECT tramitavel FROM sublocalizacao WHERE "
-            . "idSublocalizacao = $idSublocalizacao";
+        $ins = self::$con->prepare(
+            "INSERT INTO tramitacaomat
+                (MotivoTramitacao, Material_idMaterial, Usuarios_idUsuario, Usuarios_Siape,
+                 idLocalizacaoOrigem, idLocalizacaoDestino, Quantidade,
+                 idMaterialTramitados, sublocalizacao_idSubLocalizacao)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        );
+        $ins->execute([$motivo, $idMat, $idUsuario, $siape, $origem, $destino, $quantidade, $tramitados, $sublocalizacao]);
 
-    $consulta = self::$con->prepare($texto) OR trigger_error($con->error, E_USER_ERROR);
-    $consulta->execute();
-    $resultado = $consulta->fetch(PDO::FETCH_ASSOC);
-    //var_dump($resultado);
-    return $resultado['tramitavel'];
-
-}
-
-//A tramitação coletiva, quando aplicada a bolsa, case, caixa, tramita a sublocalização por meio dessa função
-function tramitaSublocalizacao($destino,$sublocalizacaoOrigem){
-    //tramita a sublocalização mudando a chave estrangeira para corresponder a nova localização
-    //a verificação se é tramitável não é feita na função
-    $sql = "UPDATE sublocalizacao SET Localizacao_idLocalizacao = $destino WHERE idSubLocalizacao = $sublocalizacaoOrigem";
-
-    try{
-        $consulta = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-        $consulta->execute();
+        self::$con->commit();
         return true;
-    }catch(Exception $e){
+    } catch (PDOException $e) {
+        if (self::$con->inTransaction()) {
+            self::$con->rollBack();
+        }
+        error_log('tramitaMaterial falhou: ' . $e->getMessage());
         return false;
     }
 }
 
-//tramitaca os materias coletivamente
+//Verifica se uma sublocalização é portátil, tramitável (bolsa, caixa, case, etc...)
+function eTramitavel($idSublocalizacao){
+    $consulta = self::$con->prepare(
+        "SELECT tramitavel FROM sublocalizacao WHERE idSublocalizacao = ?"
+    );
+    $consulta->execute([$idSublocalizacao]);
+    $resultado = $consulta->fetch(PDO::FETCH_ASSOC);
+    return $resultado['tramitavel'] ?? null;
+}
+
+//A tramitação coletiva, quando aplicada a bolsa, case, caixa, tramita a sublocalização por meio dessa função
+function tramitaSublocalizacao($destino,$sublocalizacaoOrigem){
+    try {
+        $stmt = self::$con->prepare(
+            "UPDATE sublocalizacao SET Localizacao_idLocalizacao = ? WHERE idSubLocalizacao = ?"
+        );
+        $stmt->execute([$destino, $sublocalizacaoOrigem]);
+        return true;
+    } catch (PDOException $e) {
+        error_log('tramitaSublocalizacao falhou: ' . $e->getMessage());
+        return false;
+    }
+}
+
+//tramita os materias coletivamente
 function tramitacaoColetiva($origem,$destino,$motivo,$sublocalizacaoOrigem,$sublocalizacaoDestino,$siape,$idUsuario){
 
-    //Consulta os diferentes IDs de grupo de material de uma dada sublocalização de um dado sublocal
-    $consulta = "SELECT DISTINCT(idGrupoMaterial)
-                         from material
-                         where localizacao_idlocalizacao = $origem
-                         and sublocalizacao_idSubLocalizacao = $sublocalizacaoOrigem";
-    $tramitacao = self::$con->prepare($consulta) OR trigger_error($con->error, E_USER_ERROR);
-    $tramitacao->execute();
+    $mensagem = true;
 
-    //percorre todos os materias
-    WHILE($materias = $tramitacao->fetch(PDO::FETCH_ASSOC)):
-        $idGrupoMaterial = $materias['idGrupoMaterial'];
+    // IDs distintos de grupos de materiais na sublocalização de origem
+    $stmt = self::$con->prepare(
+        "SELECT DISTINCT idGrupoMaterial FROM material
+         WHERE localizacao_idlocalizacao = ? AND sublocalizacao_idSubLocalizacao = ?"
+    );
+    $stmt->execute([$origem, $sublocalizacaoOrigem]);
 
-        //conta quantos materias de cada grupo (idGrupoMaterial) existem em uma dada sublocalização
-        $Qtd = "SELECT COUNT(Quantidade)
-                    from material
-                    where localizacao_idlocalizacao = $origem
-                    and sublocalizacao_idSubLocalizacao = $sublocalizacaoOrigem
-                    and idGrupoMaterial = $idGrupoMaterial";
-        $QtdMat = self::$con->prepare($Qtd) OR trigger_error($con->error, E_USER_ERROR);
-        $QtdMat->execute();
-        $quantidade = $QtdMat->fetchColumn();
+    while ($materias = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $idGrupoMaterial = (int) $materias['idGrupoMaterial'];
 
-        $idTramitados = "SELECT idMaterial  FROM material
-                            WHERE idGrupoMaterial = $idGrupoMaterial
-                            and localizacao_idlocalizacao = $origem
-                            and sublocalizacao_idSubLocalizacao = $sublocalizacaoOrigem
-                            order BY idMaterial  desc limit $quantidade";
-
-        $resultado = self::$con->prepare($idTramitados) OR trigger_error($con->error, E_USER_ERROR);
-        $resultado->execute();
-        $tramitados = "";
-
-        while($t = $resultado->fetch( PDO::FETCH_ASSOC )){
-                    $tramitados .= $t['idMaterial'] . ",";
+        // Conta quantos itens daquele grupo existem na sublocalização
+        $q = self::$con->prepare(
+            "SELECT COUNT(Quantidade) FROM material
+             WHERE localizacao_idlocalizacao = ?
+             AND sublocalizacao_idSubLocalizacao = ?
+             AND idGrupoMaterial = ?"
+        );
+        $q->execute([$origem, $sublocalizacaoOrigem, $idGrupoMaterial]);
+        $quantidade = (int) $q->fetchColumn();
+        if ($quantidade <= 0) {
+            continue;
         }
 
-        $tramitados = substr($tramitados, 0, -1);
+        $sel = self::$con->prepare(
+            "SELECT idMaterial FROM material
+             WHERE idGrupoMaterial = ?
+             AND localizacao_idlocalizacao = ?
+             AND sublocalizacao_idSubLocalizacao = ?
+             ORDER BY idMaterial DESC LIMIT $quantidade"
+        );
+        $sel->execute([$idGrupoMaterial, $origem, $sublocalizacaoOrigem]);
 
-        /*Muda a localizacao (Localizacao_idLocalizacao)e a sublocalizacao (Sublocalizacao_idSublocalizacao)
-        dos materiais pertencentes a um dado grupo (idGrupoMaterial) de uma dada localizacao e sublocalizacao.
-        "Tramita" os materiais*/
-        $query = "UPDATE material set Localizacao_idLocalizacao = '$destino',
-                    sublocalizacao_idSubLocalizacao = '$sublocalizacaoDestino'
-                    where localizacao_idlocalizacao = $origem
-                    and sublocalizacao_idSubLocalizacao = $sublocalizacaoOrigem
-                    and idGrupoMaterial = $idGrupoMaterial";
-
-        //alimenta os registros quanto a tramitações na tabela tramitacaomat
-        $query2 = "INSERT INTO tramitacaomat
-                                 (MotivoTramitacao,
-                                 Material_idMaterial,
-                                 Usuarios_idUsuario,
-                                 Usuarios_Siape,
-                                 idLocalizacaoOrigem,
-                                 idLocalizacaoDestino,
-                                 Quantidade,
-                                 idMaterialTramitados,
-                                 sublocalizacao_idSubLocalizacao)
-                                 VALUES ('$motivo',$idGrupoMaterial,$idUsuario,$siape,$origem,$destino,$quantidade,'$tramitados',$sublocalizacaoDestino)";
+        $ids = [];
+        while ($t = $sel->fetch(PDO::FETCH_ASSOC)) {
+            $ids[] = (int) $t['idMaterial'];
+        }
+        $tramitados = implode(',', $ids);
 
         try {
-            //tramita o material
-            $tramitar = self::$con->prepare($query) OR trigger_error($con->error, E_USER_ERROR);
-            $tramitar->execute();
+            self::$con->beginTransaction();
 
-            //faz um insert na tabela tramitacaomat
-            $tramitacaomat = self::$con->prepare($query2) OR trigger_error($con->error, E_USER_ERROR);
-            $tramitacaomat->execute();
+            $upd = self::$con->prepare(
+                "UPDATE material
+                 SET Localizacao_idLocalizacao = ?, sublocalizacao_idSubLocalizacao = ?
+                 WHERE localizacao_idlocalizacao = ?
+                 AND sublocalizacao_idSubLocalizacao = ?
+                 AND idGrupoMaterial = ?"
+            );
+            $upd->execute([$destino, $sublocalizacaoDestino, $origem, $sublocalizacaoOrigem, $idGrupoMaterial]);
 
-            $mensagem = true;
-        }catch (Exception $e){
+            $ins = self::$con->prepare(
+                "INSERT INTO tramitacaomat
+                    (MotivoTramitacao, Material_idMaterial, Usuarios_idUsuario, Usuarios_Siape,
+                     idLocalizacaoOrigem, idLocalizacaoDestino, Quantidade,
+                     idMaterialTramitados, sublocalizacao_idSubLocalizacao)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            );
+            $ins->execute([$motivo, $idGrupoMaterial, $idUsuario, $siape, $origem, $destino, $quantidade, $tramitados, $sublocalizacaoDestino]);
+
+            self::$con->commit();
+        } catch (PDOException $e) {
+            if (self::$con->inTransaction()) {
+                self::$con->rollBack();
+            }
+            error_log('tramitacaoColetiva falhou: ' . $e->getMessage());
             $mensagem = false;
         }
-
-    endwhile;
+    }
 
     return $mensagem;
 }
@@ -1361,57 +1303,44 @@ function tramitacaoColetiva($origem,$destino,$motivo,$sublocalizacaoOrigem,$subl
 //função para inserir novas localizações
 function insereLocalizacao($localizacao){
 
-            $verifica = "SELECT * FROM localizacao WHERE Localizacao = '$localizacao'";
-            $resultado = self::$con->prepare($verifica) OR trigger_error($con->error, E_USER_ERROR);
-            $resultado->execute();
-            $nResultado = $resultado->fetchColumn();
+    $stmt = self::$con->prepare("SELECT COUNT(*) FROM localizacao WHERE Localizacao = ?");
+    $stmt->execute([$localizacao]);
+    if ((int) $stmt->fetchColumn() >= 1) {
+        return false; // localização já existe
+    }
 
-         if($nResultado >= 1){
-             return false; //localização já existe.
-          }
-          else{
-             $query = "INSERT INTO localizacao (Localizacao) VALUES ('$localizacao')";
-          }
-
-          try{
-             $exec = self::$con->prepare($query) OR trigger_error($con->error, E_USER_ERROR);
-             $exec->execute();
-
-             return true;
-          }
-          catch (Exception $e){
-            return FALSE;
-        }
+    try {
+        $ins = self::$con->prepare("INSERT INTO localizacao (Localizacao) VALUES (?)");
+        $ins->execute([$localizacao]);
+        return true;
+    } catch (PDOException $e) {
+        error_log('insereLocalizacao falhou: ' . $e->getMessage());
+        return false;
+    }
 }
 
-//função para inserir novas localizações
+//função para inserir novas sublocalizações
 function insereSubLocalizacao($idLocalizacao,$sublocalizacao, $tramitavel){
 
-$verifica = "SELECT * FROM sublocalizacao
-            WHERE sublocalizacao = '$sublocalizacao'
-            and localizacao_idLocalizacao = '$idLocalizacao'";
-$resultado = self::$con->prepare($verifica) OR trigger_error($con->error, E_USER_ERROR);
-$resultado->execute();
-$nResultado = $resultado->fetchColumn();
-
-if($nResultado > 0){
- return false; //sub localização já existe.
-}
-else{
- $query = "INSERT INTO sublocalizacao
-                       (subLocalizacao,
-                       localizacao_idLocalizacao,tramitavel)
-            VALUES ('$sublocalizacao','$idLocalizacao',$tramitavel)";
-}
-
-    try{
-     $exec = self::$con->prepare($query) OR trigger_error($con->error, E_USER_ERROR);
-     $exec->execute();
-
-     return true;
+    $stmt = self::$con->prepare(
+        "SELECT COUNT(*) FROM sublocalizacao
+         WHERE sublocalizacao = ? AND localizacao_idLocalizacao = ?"
+    );
+    $stmt->execute([$sublocalizacao, $idLocalizacao]);
+    if ((int) $stmt->fetchColumn() > 0) {
+        return false; // sublocalização já existe
     }
-    catch (Exception $e){
-     return FALSE;
+
+    try {
+        $ins = self::$con->prepare(
+            "INSERT INTO sublocalizacao (subLocalizacao, localizacao_idLocalizacao, tramitavel)
+             VALUES (?, ?, ?)"
+        );
+        $ins->execute([$sublocalizacao, $idLocalizacao, $tramitavel]);
+        return true;
+    } catch (PDOException $e) {
+        error_log('insereSubLocalizacao falhou: ' . $e->getMessage());
+        return false;
     }
 }
 
