@@ -6,21 +6,26 @@ protected static $con;
 
 function conectar(){
 
-
-$host = "localhost";
-$banco = "gpciuc95_deposito";
-$usuarioBanco = "gpciuc95_db";
-$senhaBanco = "dbadmin123";
+    $config = require __DIR__ . '/config.php';
+    $db = $config['db'];
 
     try{
-        $opcoes = array(
-            PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES UTF8'
+        $dsn = sprintf(
+            'mysql:host=%s;dbname=%s;charset=%s',
+            $db['host'],
+            $db['name'],
+            $db['charset']
         );
-
-        self::$con = new PDO("mysql:dbname=$banco;host=$host", $usuarioBanco, $senhaBanco,$opcoes);
-
-    }catch(Exception $e){
-           echo "Falha na conexão ao banco de dados, erro: ".PHP_EOL . $e->getMessage();
+        $opcoes = [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => false,
+        ];
+        self::$con = new PDO($dsn, $db['user'], $db['pass'], $opcoes);
+    }catch(PDOException $e){
+        error_log('SCM DB connect error: ' . $e->getMessage());
+        http_response_code(500);
+        die('Falha na conexão ao banco de dados. Contate o administrador.');
     }
 }
 
@@ -636,14 +641,49 @@ function getUsuarios() {
     return $resultado;
   }
 
+/**
+ * Autentica o usuário pelo SIAPE e senha em texto claro.
+ * Suporta hashes legados em MD5: ao autenticar com sucesso, re-hash automaticamente
+ * para password_hash(BCRYPT). Retorna o array do usuário ou null.
+ */
 function login($siape, $senha){
-    $sql = "SELECT * FROM usuarios WHERE siape = '$siape'
-                                           AND senha = '$senha'";
-    $resultado = self::$con->prepare($sql)  OR trigger_error($con->error, E_USER_ERROR);
-    $resultado->execute();
+    $sql = "SELECT idUsuario, NomeUsuario, Permissao_idPermissao, Siape, Senha, ativo
+            FROM usuarios
+            WHERE siape = ?
+            LIMIT 1";
+    $stmt = self::$con->prepare($sql);
+    $stmt->execute([$siape]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    return $resultado;
-  }
+    if (!$user) {
+        return null;
+    }
+
+    $hashArmazenado = (string) $user['Senha'];
+    $autenticado    = false;
+
+    // Hash moderno (password_hash)
+    if (password_verify($senha, $hashArmazenado)) {
+        $autenticado = true;
+        if (password_needs_rehash($hashArmazenado, PASSWORD_BCRYPT)) {
+            $this->atualizaSenhaHash($user['Siape'], password_hash($senha, PASSWORD_BCRYPT));
+        }
+    }
+    // Fallback para usuários antigos com hash MD5 (32 hex chars)
+    elseif (strlen($hashArmazenado) === 32 && ctype_xdigit($hashArmazenado)
+            && hash_equals($hashArmazenado, md5($senha))) {
+        $autenticado = true;
+        // Migra para bcrypt no primeiro login bem-sucedido
+        $this->atualizaSenhaHash($user['Siape'], password_hash($senha, PASSWORD_BCRYPT));
+    }
+
+    return $autenticado ? $user : null;
+}
+
+private function atualizaSenhaHash($siape, $novoHash){
+    $stmt = self::$con->prepare("UPDATE usuarios SET Senha = ? WHERE Siape = ?");
+    $stmt->execute([$novoHash, $siape]);
+}
 
 function insereAlteracao($descricao,$idMaterial,$siape,$idLocalizacao,$quantidade,$memorandoSei){
 
@@ -894,35 +934,28 @@ function ativaUsuario($ativar,$siapeUsuario){
 //utilizada para recuperar senha
 function recuperaSenha($cpf,$email,$siape,$senha){
 
-    $sql = "select * from usuarios u where u.Siape = '$siape'
-                                     AND   u.CPF   = '$cpf'
-                                     AND   u.email = '$email'
-                                     AND   u.ativo = 1";
+    $stmt = self::$con->prepare(
+        "SELECT COUNT(*) FROM usuarios
+         WHERE Siape = ? AND CPF = ? AND email = ? AND ativo = 1"
+    );
+    $stmt->execute([$siape, $cpf, $email]);
 
-    $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-    $resultado->execute();
-    $nResultado = $resultado->fetchColumn();
-
-    if($nResultado > 0){
-      $senhaMD5 = MD5($senha);
-
-       $query2 = "UPDATE usuarios set Senha = '$senhaMD5'
-                  WHERE Siape = '$siape' AND CPF   = '$cpf'";
-    }
-    else{
-      return false;//usuário não existe
+    if ((int) $stmt->fetchColumn() === 0) {
+        return false; // usuário não existe ou inativo
     }
 
-    try{
-        $resultado = self::$con->prepare($query2) OR trigger_error($con->error, E_USER_ERROR);
-        $resultado->execute();
+    $senhaHash = password_hash($senha, PASSWORD_BCRYPT);
+
+    try {
+        $upd = self::$con->prepare(
+            "UPDATE usuarios SET Senha = ? WHERE Siape = ? AND CPF = ?"
+        );
+        $upd->execute([$senhaHash, $siape, $cpf]);
         return true;
+    } catch (PDOException $e) {
+        error_log('recuperaSenha falhou: ' . $e->getMessage());
+        return false;
     }
-    catch(Exception $e){
-       die("erro ao cadastrar, erro ".$e->getMessage());
-       return false;
-    }
-
 }
 
 //utilizada para ativar materiais (ativamaterial.php)
@@ -1386,29 +1419,27 @@ else{
 //função para inserir usuários
 function insereUsuario($nome,$cpf,$email,$siape,$senha,$senha2){
 
-$verifica = "SELECT * FROM usuarios WHERE siape = '$siape'";
-$resultado = self::$con->prepare($verifica) OR trigger_error($con->error, E_USER_ERROR);
-$resultado->execute();
-$nResultado = $resultado->fetchColumn();
-
-if($nResultado >= 1){
- return false; //usuário já existe.
-}
-if($senha != $senha2){
-   return false; //senhas não conferem.
-}
-else{
- $query = "insert into usuarios (CPF, email, NomeUsuario, Permissao_idPermissao, Senha, Siape)
-            VALUES('$cpf','$email','$nome',2,md5('$senha'),'$siape')";
-}
-    try{
-            $exec = self::$con->prepare($query) OR trigger_error($con->error, E_USER_ERROR);
-            $exec->execute();
-
-         return true;//usuário cadastrado com sucesso
+    if ($senha !== $senha2) {
+        return false; // senhas não conferem
     }
-    catch (Exception $e){
-         return FALSE;//falha no cadastro
+
+    $stmt = self::$con->prepare("SELECT COUNT(*) FROM usuarios WHERE siape = ?");
+    $stmt->execute([$siape]);
+    if ((int) $stmt->fetchColumn() >= 1) {
+        return false; // usuário já existe
+    }
+
+    $senhaHash = password_hash($senha, PASSWORD_BCRYPT);
+
+    try {
+        $sql = "INSERT INTO usuarios (CPF, email, NomeUsuario, Permissao_idPermissao, Senha, Siape)
+                VALUES (?, ?, ?, 2, ?, ?)";
+        $stmt = self::$con->prepare($sql);
+        $stmt->execute([$cpf, $email, $nome, $senhaHash, $siape]);
+        return true;
+    } catch (PDOException $e) {
+        error_log('insereUsuario falhou: ' . $e->getMessage());
+        return false;
     }
 }
 

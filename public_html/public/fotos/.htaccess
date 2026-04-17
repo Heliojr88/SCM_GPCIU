@@ -1,0 +1,26 @@
+# Bloqueia execução de qualquer código server-side nesta pasta de uploads.
+<FilesMatch "\.(php|php3|php4|php5|php7|phtml|phar|pl|py|cgi|asp|aspx|jsp|sh)$">
+    Require all denied
+</FilesMatch>
+
+# Remove handlers que poderiam interpretar arquivos como script
+RemoveHandler .php .phtml .phar
+RemoveType .php .phtml .phar
+
+# Força Content-Type seguro e evita sniffing
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>
+
+# Desabilita execução de PHP via engine
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>
+
+Options -ExecCGI -Indexes

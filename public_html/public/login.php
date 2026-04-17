@@ -1,5 +1,4 @@
-<?php 
-
+<?php
 session_start();
 
 require("../app/pdo.php");
@@ -7,52 +6,45 @@ require("../app/pdo.php");
 $_pdo = new connectDB();
 $_pdo->conectar();
 
-
-if(!empty($_POST) or !empty($_GET)){
-	if(isset($_GET['q']) and $_GET['q'] == 'logout'){
-		session_destroy();
-		header("Location:../login.php");	
-	}
-
-	$siape = $_POST['siape'];
-	$entrar = $_POST['login'];
-	$senha = md5($_POST['senha']);
-
-	if (isset($entrar)) {
-		$consulta = $_pdo->login($siape, $senha);
-		$verifica = $consulta->fetch(PDO::FETCH_ASSOC);
-                //echo $verifica;
-				
-		if (!$verifica){
-		//  echo"<script language='javascript' type='text/javascript'>alert('Por motivos de segurança, se esse é o seu Primeiro Acesso, entre em contato com o Cb Martins para ativar o seu usuário. Caso contrário, verifique se o seu Login/Senha estão corretos!');window.location.href='login.php';</script>";
-			echo"<script language='javascript' type='text/javascript'>alert('Login e/ou senha incorretos');window.location.href='login.php';</script>";
-			die();
-		}else if($verifica['ativo'] == 0){
-			echo"<script language='javascript' type='text/javascript'>alert('Por motivos de segurança, se esse é o seu Primeiro Acesso, entre em contato com o Sgt Delvan para ativar o seu usuário.');window.location.href='login.php';</script>";
-		}
-		else{
-		 
-			$res[] = $verifica['NomeUsuario'];					
-			$res[] = $verifica['idUsuario'];					
-			$res[] = $verifica['Permissao_idPermissao'];
-			
-			//print_r ($verifica);
-			//print_r($res);					
-			
-			$_SESSION['nome'] = $res[0];
-			$_SESSION['idUsuario'] = $res[1];
-			$_SESSION['senha'] = $senha;
-			$_SESSION['siape'] = $siape;
-			$_SESSION['permissao'] = $res[2];
-								
-			setcookie("login",$login);
-			header("Location:index6.php");					
-
-		}
-	}
+if (isset($_GET['q']) && $_GET['q'] === 'logout') {
+    $_SESSION = [];
+    session_destroy();
+    header('Location: login.php');
+    exit;
 }
-	
-	
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
+    $siape = trim((string) ($_POST['siape'] ?? ''));
+    $senha = (string) ($_POST['senha'] ?? '');
+
+    if ($siape === '' || $senha === '') {
+        echo "<script>alert('Informe SIAPE e senha.');window.location.href='login.php';</script>";
+        exit;
+    }
+
+    $usuario = $_pdo->login($siape, $senha);
+
+    if (!$usuario) {
+        echo "<script>alert('Login e/ou senha incorretos');window.location.href='login.php';</script>";
+        exit;
+    }
+
+    if ((int) $usuario['ativo'] === 0) {
+        echo "<script>alert('Por motivos de segurança, se esse é o seu Primeiro Acesso, entre em contato com o administrador para ativar o seu usuário.');window.location.href='login.php';</script>";
+        exit;
+    }
+
+    // Previne session fixation
+    session_regenerate_id(true);
+
+    $_SESSION['nome']      = $usuario['NomeUsuario'];
+    $_SESSION['idUsuario'] = $usuario['idUsuario'];
+    $_SESSION['siape']     = $usuario['Siape'];
+    $_SESSION['permissao'] = $usuario['Permissao_idPermissao'];
+
+    header('Location: index6.php');
+    exit;
+}
 ?>
 
 <!DOCTYPE html>
