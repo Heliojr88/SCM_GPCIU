@@ -1,23 +1,10 @@
 <?php
 ini_set('default_charset','UTF-8');
-session_start();
-
-require("../app/pdo.php");
-
-$_pdo = new connectDB();
-$_pdo->conectar();
+require __DIR__ . '/../app/bootstrap.php';
+requireLogin();
 
 $nome = $_SESSION['nome'];
-$idLocalizacao = $_GET['idLocalizacao'];
-
-if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == true))
-{
-	unset($_SESSION['siape']);
-	unset($_SESSION['senha']);
-	
-	echo("<script language='javascript' type='text/javascript'>alert('Gentileza realizar login no Sistema!');window.location.href='login.php';</script>");
-}
-
+$idLocalizacao = $_GET['idLocalizacao'] ?? null;
 ?>
 
 

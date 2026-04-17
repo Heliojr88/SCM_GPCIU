@@ -1,28 +1,11 @@
 <?php
-session_start();
-require("../app/pdo.php");
-
-$_pdo = new connectDB();
-$_pdo->conectar();
+require __DIR__ . '/../app/bootstrap.php';
+requireLogin(1);
 
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
 $nome = $_SESSION['nome'];
 $siape = $_SESSION['siape'];
-
-if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == true))
-{
-	unset($_SESSION['siape']);
-	unset($_SESSION['senha']);
-	
-	echo"<script language='javascript' type='text/javascript'>alert('Gentileza efetue login no Sistema');</script>";
-	
-	header('location:login.php');
-}
-
-   if($_SESSION['permissao'] != 1){
-	   echo"<script language='javascript' type='text/javascript'>alert('Usuário sem permissão para acessar a funcionalidade!');window.location.href='index.php';</script>";
-   }	
 	
    if(!empty($_POST) or !empty($_GET)){
 		

@@ -1,12 +1,6 @@
 <?php
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
-session_start();
-
-//acesso ao PDO
-require("../app/pdo.php");
-
-$_pdo = new connectDB();
-$_pdo->conectar();
+require __DIR__ . '/../app/bootstrap.php';
 
 if(!empty($_POST) or !empty($_GET)){
   

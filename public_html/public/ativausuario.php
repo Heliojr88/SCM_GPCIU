@@ -1,12 +1,9 @@
 <?php
-session_start();
+require __DIR__ . '/../app/bootstrap.php';
+requireLogin();
+
 $nome  = $_SESSION['nome'];
 $siape = $_SESSION['siape'];
-
-require("../app/pdo.php");
-
-$_pdo = new connectDB();
-$_pdo->conectar();
 
 $teste  = $_pdo->getMaster($siape);
 $master = $teste->fetch(PDO::FETCH_ASSOC);
@@ -14,7 +11,7 @@ $master = $teste->fetch(PDO::FETCH_ASSOC);
 //verifica se o usuário é master
 if($master['master'] != 1){
 	   echo"<script language='javascript' type='text/javascript'>alert('Usuário sem permissão para acessar a funcionalidade!');window.location.href='index7.php';</script>";
-       
+
 }
 
  if(!empty($_POST) or !empty($_GET)){

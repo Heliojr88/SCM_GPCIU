@@ -1,21 +1,10 @@
 <?php
-session_start();
-error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
-require("../app/pdo.php");
+require __DIR__ . '/../app/bootstrap.php';
+requireLogin();
 
-$_pdo = new connectDB();
-$_pdo->conectar();
+error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
 $nome = $_SESSION['nome'];
-
-if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == true))
-{
-	unset($_SESSION['siape']);
-	unset($_SESSION['senha']);
-	
-	echo("<script language='javascript' type='text/javascript'>alert('Gentileza realizar login no Sistema!');window.location.href='login.php';</script>");
-	//header("Location:/deposito/public/login.php");
-}
 
 if(!empty($_POST) or !empty($_GET)){
    

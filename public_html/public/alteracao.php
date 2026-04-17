@@ -1,20 +1,8 @@
 <?php
-session_start();
+require __DIR__ . '/../app/bootstrap.php';
+requireLogin();
+
 $UsuarioLogado = $_SESSION['nome'];
-
-if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == true))
-{
-	unset($_SESSION['siape']);
-	unset($_SESSION['senha']);
-	
-	echo"<script language='javascript' type='text/javascript'>alert('Gentileza efetue login no Sistema');</script>";
-	header('location:login.php');
-}
-
-require("../app/pdo.php");
-
-$_pdo = new connectDB();
-$_pdo->conectar();
 
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 

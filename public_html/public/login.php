@@ -1,10 +1,5 @@
 <?php
-session_start();
-
-require("../app/pdo.php");
-
-$_pdo = new connectDB();
-$_pdo->conectar();
+require __DIR__ . '/../app/bootstrap.php';
 
 if (isset($_GET['q']) && $_GET['q'] === 'logout') {
     $_SESSION = [];

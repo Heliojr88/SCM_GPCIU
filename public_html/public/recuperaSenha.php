@@ -1,13 +1,9 @@
 <?php
-session_start();
-require("../app/pdo.php");
+require __DIR__ . '/../app/bootstrap.php';
 
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
-$_pdo = new connectDB();
-$_pdo->conectar();
-
-$nome = $_SESSION['nome'];
+$nome = $_SESSION['nome'] ?? '';
 
 if(!empty($_POST) or !empty($_GET)){
 	

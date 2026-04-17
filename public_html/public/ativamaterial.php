@@ -1,17 +1,10 @@
 <?php
-session_start();
-$UsuarioLogado = $_SESSION['nome'];
-require("../app/pdo.php");
+require __DIR__ . '/../app/bootstrap.php';
+requireLogin(1);
 
-$_pdo = new connectDB();
-$_pdo->conectar();
+$UsuarioLogado = $_SESSION['nome'];
 
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
- 
- //verifica se é administrador
- if($_SESSION['permissao'] != 1){
-	   echo"<script language='javascript' type='text/javascript'>alert('Usuário sem permissão para acessar a funcionalidade!');window.location.href='index.php';</script>";
-   }
    
  if(!empty($_POST) or !empty($_GET)){
 	 
