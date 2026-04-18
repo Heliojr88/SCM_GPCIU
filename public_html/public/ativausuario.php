@@ -22,6 +22,7 @@ if($master['master'] != 1){
 
  //ativa/desativa usuário
  $ativa = $_pdo->ativaUsuario($ativar,$siapeUsuario);
+ audit_log($ativar ? 'user.activate' : 'user.deactivate', $siapeUsuario);
  
  if ($ativa==0){
 		echo"<script language='javascript' type='text/javascript'>alert('Falha na ativação do usuário');window.location.href='ativausuario.php';</script>";

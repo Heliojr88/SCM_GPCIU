@@ -33,6 +33,10 @@ $idGrupoMat = (int) substr($idGrupoMaterial,0,$posicao);
 $ativar = $_pdo->baixaMaterial($idGrupoMat,$idLocal,$alteracao,$quantidade,$memorando,$idUsuario,$siape);
 
 if($ativar){
+    audit_log('material.baixa', "$idGrupoMat/$idLocal", [
+        'quantidade' => $quantidade,
+        'memorando'  => $memorando,
+    ]);
     echo"<script language='javascript' type='text/javascript'>alert('Material baixado com sucesso!');</script>";
 }
 else{

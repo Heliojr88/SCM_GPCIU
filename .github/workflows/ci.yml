@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, "claude/**"]
+  pull_request:
+
+jobs:
+  lint:
+    name: PHP Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+          tools: none
+      - name: Run php -l on all PHP files
+        run: |
+          set -e
+          failed=0
+          while IFS= read -r -d '' f; do
+            out=$(php -l "$f" 2>&1) || true
+            if ! echo "$out" | grep -q "No syntax errors"; then
+              echo "::error file=$f::$out"
+              failed=1
+            fi
+          done < <(find public_html/app public_html/public -type f -name '*.php' -print0)
+          exit "$failed"
+
+  phpstan:
+    name: PHPStan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+          tools: phpstan
+      - name: Run PHPStan
+        run: phpstan analyse --no-progress --memory-limit=512M

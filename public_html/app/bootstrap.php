@@ -18,6 +18,77 @@
 
 require_once __DIR__ . '/pdo.php';
 
+// Ambiente (production|development). Controla exibição de erros detalhados.
+if (!defined('SCM_ENV')) {
+    define('SCM_ENV', (getenv('APP_ENV') ?: 'production'));
+}
+
+// Em produção, esconda detalhes técnicos do usuário; em dev, mostre.
+if (SCM_ENV === 'production') {
+    ini_set('display_errors', '0');
+    ini_set('display_startup_errors', '0');
+} else {
+    ini_set('display_errors', '1');
+}
+error_reporting(E_ALL);
+
+/**
+ * Escreve uma entrada JSON de log em storage/logs/app.log.
+ * Ignora falhas de IO para evitar cascata de erros em runtime.
+ */
+function scm_log(string $level, string $message, array $context = []): void
+{
+    $dir = __DIR__ . '/../storage/logs';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0700, true);
+    }
+    $entry = [
+        'ts'      => date('c'),
+        'level'   => $level,
+        'message' => $message,
+        'context' => $context,
+        'ip'      => $_SERVER['REMOTE_ADDR'] ?? null,
+        'user'    => $_SESSION['siape']      ?? null,
+        'uri'     => $_SERVER['REQUEST_URI'] ?? null,
+    ];
+    @file_put_contents(
+        $dir . '/app.log',
+        json_encode($entry, JSON_UNESCAPED_UNICODE) . PHP_EOL,
+        FILE_APPEND | LOCK_EX
+    );
+}
+
+/**
+ * Handler global de exceções não tratadas. Em produção mostra mensagem
+ * genérica; em dev mostra o stack trace. Sempre registra no log.
+ */
+set_exception_handler(function (\Throwable $e): void {
+    scm_log('error', $e->getMessage(), [
+        'exception' => get_class($e),
+        'file'      => $e->getFile(),
+        'line'      => $e->getLine(),
+        'trace'     => $e->getTraceAsString(),
+    ]);
+
+    if (!headers_sent()) {
+        http_response_code(500);
+    }
+
+    if (SCM_ENV === 'production') {
+        echo '<h1>Erro interno</h1><p>Não foi possível processar sua requisição. Tente novamente em alguns instantes.</p>';
+    } else {
+        echo '<h1>Exceção não tratada</h1><pre>' . htmlspecialchars((string) $e, ENT_QUOTES, 'UTF-8') . '</pre>';
+    }
+});
+
+// Converte erros PHP em ErrorException (exceto @ silenciamento).
+set_error_handler(function (int $severity, string $message, string $file, int $line): bool {
+    if (!(error_reporting() & $severity)) {
+        return false;
+    }
+    throw new \ErrorException($message, 0, $severity, $file, $line);
+});
+
 // Headers de segurança comuns. Aplicados antes de qualquer saída para
 // evitar Clickjacking, MIME sniffing e vazamento de Referer cross-site.
 if (!headers_sent()) {
@@ -235,5 +306,34 @@ function rate_limit_reset(string $key): void
     $file = rate_limit_file($key);
     if (is_file($file)) {
         @unlink($file);
+    }
+}
+
+/**
+ * Registra uma ação sensível na tabela audit_log. Falhas silenciosas (log em
+ * arquivo) para nunca quebrar o fluxo de negócio por indisponibilidade do log.
+ * Requer a migration DB/migrations/001_audit_log.sql aplicada.
+ */
+function audit_log(string $action, ?string $target = null, array $details = []): void
+{
+    try {
+        $pdo = pdoConn()->pdo();
+        $stmt = $pdo->prepare(
+            'INSERT INTO audit_log (siape, action, target, details, ip, user_agent)
+             VALUES (:siape, :action, :target, :details, :ip, :ua)'
+        );
+        $stmt->execute([
+            ':siape'   => $_SESSION['siape']                   ?? null,
+            ':action'  => $action,
+            ':target'  => $target,
+            ':details' => $details ? json_encode($details, JSON_UNESCAPED_UNICODE) : null,
+            ':ip'      => client_ip(),
+            ':ua'      => substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
+        ]);
+    } catch (\Throwable $e) {
+        scm_log('warning', 'audit_log falhou', [
+            'action' => $action,
+            'error'  => $e->getMessage(),
+        ]);
     }
 }

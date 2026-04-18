@@ -29,9 +29,15 @@ if (($origem == $destino) and ( empty($sublocalizacao))){
     echo"<script language='javascript' type='text/javascript'>alert('A Origem deve ser diferente do destino!');</script>";
 } 
 else{
-   $tramitar = $_pdo->tramitaMaterial($origem,$destino,$quantidade,$idmaterial,$motivo,$sublocalizacao,$siape,$idUsuario); 
-  
+   $tramitar = $_pdo->tramitaMaterial($origem,$destino,$quantidade,$idmaterial,$motivo,$sublocalizacao,$siape,$idUsuario);
+
    if($tramitar){
+       audit_log('material.tramita', "$origem->$destino", [
+           'material'       => $idmaterial,
+           'quantidade'     => $quantidade,
+           'motivo'         => $motivo,
+           'sublocalizacao' => $sublocalizacao,
+       ]);
        echo"<script language='javascript' type='text/javascript'>alert('Tramitação realizada com sucesso');</script>";
    }
    else{

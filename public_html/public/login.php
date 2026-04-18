@@ -2,6 +2,7 @@
 require __DIR__ . '/../app/bootstrap.php';
 
 if (isset($_GET['q']) && $_GET['q'] === 'logout') {
+    audit_log('logout');
     $_SESSION = [];
     session_destroy();
     header('Location: login.php');
@@ -28,11 +29,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
     $usuario = $_pdo->login($siape, $senha);
 
     if (!$usuario) {
+        audit_log('login.failed', $siape);
         echo "<script>alert('Login e/ou senha incorretos');window.location.href='login.php';</script>";
         exit;
     }
 
     if ((int) $usuario['ativo'] === 0) {
+        audit_log('login.inactive', $siape);
         echo "<script>alert('Por motivos de segurança, se esse é o seu Primeiro Acesso, entre em contato com o administrador para ativar o seu usuário.');window.location.href='login.php';</script>";
         exit;
     }
@@ -46,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
     $_SESSION['permissao'] = $usuario['Permissao_idPermissao'];
 
     rate_limit_reset($rlKey);
+    audit_log('login.success', $_SESSION['siape']);
 
     header('Location: index6.php');
     exit;

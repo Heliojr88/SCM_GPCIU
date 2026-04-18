@@ -29,6 +29,12 @@ function conectar(){
     }
 }
 
+/** Exposição do PDO bruto para helpers que precisam de prepared statements. */
+public function pdo(): PDO
+{
+    return self::$con;
+}
+
 //retorna todos os materiais
 function getMaterial() {
 
