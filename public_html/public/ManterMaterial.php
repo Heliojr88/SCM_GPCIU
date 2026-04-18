@@ -15,47 +15,14 @@ if (!empty($_POST)) {
     $categoria       = req_id('categoria', 'POST');
     $tipomaterial    = req_id('tipomaterial', 'POST');
     $idGrupoMaterial = req_str('material', '', 'POST', 50);
-    $foto            = $_FILES["foto"];
-    $error;
 
-    // Se a foto estiver sido selecionada
-    if (!empty($foto["name"])) {
-
-        // Largura máxima em pixels
-        $largura = 150;
-        // Altura máxima em pixels
-        $altura = 180;
-        // Tamanho máximo do arquivo em bytes
-        $tamanho = 1000;
-
-        // Verifica se o arquivo é uma imagem
-        if (!preg_match("/^image\/(pjpeg|jpeg|png|gif|bmp)$/", $foto["type"])) {
-            $error[1] = "Isso não é uma imagem.";
-        }
-
-        // Pega as dimensões da imagem
-        $dimensoes = getimagesize($foto["tmp_name"]);
-
-        // Se não houver nenhum erro
-        if (count($error) == 0) {
-
-            // Pega extensão da imagem
-            preg_match("/\.(gif|bmp|png|jpg|jpeg){1}$/i", $foto["name"], $ext);
-
-            // Gera um nome único para a imagem
-            $nome_imagem = md5(uniqid(time())) . "." . $ext[1];
-
-            // Caminho de onde ficará a imagem
-            $caminho_imagem = "fotos/" . $nome_imagem;
-
-            // Faz o upload da imagem para seu respectivo caminho
-            move_uploaded_file($foto["tmp_name"], $caminho_imagem);
-
-            // Insere os dados no banco
-            //$sql = mysql_query("INSERT INTO usuarios VALUES ('', '".$nome."', '".$email."', '".$nome_imagem."')");
-        }
+    $uploadErr = null;
+    $nome_imagem = upload_image('foto', __DIR__ . '/fotos', $uploadErr);
+    if ($uploadErr !== null) {
+        echo "<script>alert('" . e($uploadErr) . "');window.location.href='ManterMaterial.php';</script>";
+        exit;
     }
-    
+
     $manter = $_pdo->manterMaterial($descricao, $patrimonio, $categoria, $tipomaterial, $idGrupoMaterial, $nome_imagem, $siape);
     
     if($manter){

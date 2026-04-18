@@ -1,0 +1,15 @@
+# Bloqueia extensoes e arquivos sensiveis que nao devem ser servidos.
+<FilesMatch "\.(sql|env|log|ini|bak|old|orig|swp|pem|key)$">
+    Require all denied
+</FilesMatch>
+
+# Bloqueia arquivos de teste/duplicados conhecidos nesta pasta.
+<Files "teste.php">
+    Require all denied
+</Files>
+<Files "login2.php">
+    Require all denied
+</Files>
+
+# Esconde listagens de diretorio
+Options -Indexes

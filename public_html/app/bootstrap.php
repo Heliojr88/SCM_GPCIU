@@ -310,6 +310,78 @@ function rate_limit_reset(string $key): void
 }
 
 /**
+ * Recebe um upload de imagem e grava em $destDir com nome aleatório.
+ *
+ * Validações:
+ *  - Erro do PHP (UPLOAD_ERR_OK)
+ *  - is_uploaded_file (mitiga bypass de $_FILES forjado)
+ *  - Tamanho máximo em bytes (default 2 MiB)
+ *  - MIME real via finfo (não confia em $_FILES['type'])
+ *  - Extensão derivada do MIME (não do nome do arquivo enviado)
+ *
+ * Retorna o nome do arquivo gerado em caso de sucesso, ou null se:
+ *  - Nenhum arquivo enviado
+ *  - Validação falhou (mensagem em $errorOut)
+ */
+function upload_image(string $fieldName, string $destDir, ?string &$errorOut = null, int $maxBytes = 2097152): ?string
+{
+    $errorOut = null;
+
+    if (!isset($_FILES[$fieldName]) || !is_array($_FILES[$fieldName])) {
+        return null;
+    }
+    $file = $_FILES[$fieldName];
+
+    if (!isset($file['error']) || $file['error'] === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        $errorOut = 'Falha no upload do arquivo (codigo ' . (int) $file['error'] . ').';
+        return null;
+    }
+    if (!is_uploaded_file($file['tmp_name'])) {
+        $errorOut = 'Arquivo de upload invalido.';
+        return null;
+    }
+    if (($file['size'] ?? 0) > $maxBytes) {
+        $errorOut = 'Arquivo excede o tamanho maximo permitido.';
+        return null;
+    }
+
+    $allowed = [
+        'image/jpeg' => 'jpg',
+        'image/pjpeg' => 'jpg',
+        'image/png'  => 'png',
+        'image/gif'  => 'gif',
+    ];
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = $finfo->file($file['tmp_name']);
+    if (!isset($allowed[$mime])) {
+        $errorOut = 'Tipo de arquivo nao permitido.';
+        return null;
+    }
+
+    if (!is_dir($destDir)) {
+        if (!@mkdir($destDir, 0755, true) && !is_dir($destDir)) {
+            $errorOut = 'Diretorio de destino indisponivel.';
+            return null;
+        }
+    }
+
+    $filename = bin2hex(random_bytes(16)) . '.' . $allowed[$mime];
+    $dest     = rtrim($destDir, '/\\') . '/' . $filename;
+
+    if (!move_uploaded_file($file['tmp_name'], $dest)) {
+        $errorOut = 'Falha ao mover o arquivo para o destino.';
+        return null;
+    }
+
+    @chmod($dest, 0644);
+    return $filename;
+}
+
+/**
  * Registra uma ação sensível na tabela audit_log. Falhas silenciosas (log em
  * arquivo) para nunca quebrar o fluxo de negócio por indisponibilidade do log.
  * Requer a migration DB/migrations/001_audit_log.sql aplicada.

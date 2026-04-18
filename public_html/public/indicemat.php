@@ -13,44 +13,14 @@ csrf_validate();
 $quantidade      = req_int('quantidade', 0, 'POST');
 $idGrupoMaterial = req_str('material', '', 'POST', 50);
 $localizacao     = req_id('localizacao', 'POST');
-$foto            = $_FILES["foto"];
-$error;
 
-// Se a foto estiver sido selecionada
-if (!empty($foto["name"])) {
+$uploadErr = null;
+$nome_imagem = upload_image('foto', __DIR__ . '/fotos', $uploadErr);
+if ($uploadErr !== null) {
+    echo "<script>alert('" . e($uploadErr) . "');window.location.href='indicemat.php';</script>";
+    exit;
+}
 
-       // Largura máxima em pixels
-       $largura = 150;
-       // Altura máxima em pixels
-       $altura = 180;
-       // Tamanho máximo do arquivo em bytes
-       $tamanho = 1000;
-
-// Verifica se o arquivo é uma imagem
-if(!preg_match("/^image\/(pjpeg|jpeg|png|gif|bmp)$/", $foto["type"])){
-  $error[1] = "Isso não é uma imagem.";
-       } 
-
-       // Pega as dimensões da imagem
-       $dimensoes = getimagesize($foto["tmp_name"]);
-
-       // Se não houver nenhum erro
-       if (count($error) == 0) {
-
-               // Pega extensão da imagem
-               preg_match("/\.(gif|bmp|png|jpg|jpeg){1}$/i", $foto["name"], $ext);
-
-       // Gera um nome único para a imagem
-       $nome_imagem = md5(uniqid(time())) . "." . $ext[1];
-
-       // Caminho de onde ficará a imagem
-        $caminho_imagem = "fotos/" . $nome_imagem;
-
-               // Faz o upload da imagem para seu respectivo caminho
-               move_uploaded_file($foto["tmp_name"], $caminho_imagem);
-
-   }    
-}		
 if($quantidade <= 0){
 	echo"<script language='javascript' type='text/javascript'>alert('Valor inválido para Quantidade');window.location.href='indicemat.php';</script>";
 	die();
