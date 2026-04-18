@@ -7,8 +7,8 @@ $nome = $_SESSION['nome'];
  		 
 if(isset($_REQUEST['origem']))
 {
-$origem = $_REQUEST['origem'];
-			
+$origem = req_id('origem');
+if ($origem === null) { exit; }
 $consulta = $_pdo->getMaterialAll($origem);
   WHILE($material = $consulta->fetch(PDO::FETCH_ASSOC)):
 
@@ -27,11 +27,11 @@ ENDWHILE;
 }
 ?>
 
-<?php     
+<?php
 if(isset($_REQUEST['origem']))
 {
-$origem = $_REQUEST['origem'];
-			
+$origem = req_id('origem');
+if ($origem === null) { exit; }
 $consultasublocal = $_pdo->getSubLocalizacao($origem);
   WHILE($sublocal = $consultasublocal->fetch(PDO::FETCH_ASSOC)):
 
@@ -43,11 +43,11 @@ ENDWHILE;
 }
 ?> 
      
-<?php     
+<?php
 if(isset($_REQUEST['subOrigem']))
 {
-$origem = $_REQUEST['subOrigem'];
-			
+$origem = req_id('subOrigem');
+if ($origem === null) { exit; }
 $consultasublocal = $_pdo->getSubLocalizacao($origem);
   WHILE($sublocal = $consultasublocal->fetch(PDO::FETCH_ASSOC)):
 
@@ -59,11 +59,11 @@ ENDWHILE;
 }
 ?>
 
-<?php     
+<?php
 if(isset($_REQUEST['subDestino']))
 {
-$destino = $_REQUEST['subDestino'];
-			
+$destino = req_id('subDestino');
+if ($destino === null) { exit; }
 $consultasublocal = $_pdo->getSubLocalizacao($destino);
   WHILE($sublocal = $consultasublocal->fetch(PDO::FETCH_ASSOC)):
 
@@ -75,11 +75,11 @@ ENDWHILE;
 }
 ?>
 
-<?php     
+<?php
 if(isset($_REQUEST['destino']))
 {
-$destino = $_REQUEST['destino'];
-			
+$destino = req_id('destino');
+if ($destino === null) { exit; }
 $consultasublocal = $_pdo->getSubLocalizacao($destino);
   WHILE($sublocal = $consultasublocal->fetch(PDO::FETCH_ASSOC)):
 

@@ -13,18 +13,22 @@ $UsuarioLogado = $_SESSION['nome'];
 $idUsuario = $_SESSION['idUsuario'];
 $siape = $_SESSION['siape'];
 
-$alteracao       = $_POST['alteracao'];
-$idGrupoMaterial = $_POST['material'];
-$quantidade      = $_POST['quantidade'];
-$memorando       = $_POST['memorando'];
+$alteracao       = req_str('alteracao', '', 'POST', 1000);
+$idGrupoMaterial = req_str('material',  '', 'POST', 50);
+$quantidade      = req_int('quantidade', 0, 'POST');
+$memorando       = req_str('memorando',  '', 'POST', 100);
 
 $posicao = strpos($idGrupoMaterial,'/');
+if ($posicao === false) {
+    echo "<script>alert('Material inválido.');window.location.href='baixamaterial.php';</script>";
+    exit;
+}
 
 // ID LOCALIZAÇÃO
-$idLocal = substr($idGrupoMaterial,$posicao+1,4);
+$idLocal = (int) substr($idGrupoMaterial,$posicao+1,4);
 
 // ID GRUPO MATERIAL
-$idGrupoMat = substr($idGrupoMaterial,0,$posicao);	
+$idGrupoMat = (int) substr($idGrupoMaterial,0,$posicao);
 
 $ativar = $_pdo->baixaMaterial($idGrupoMat,$idLocal,$alteracao,$quantidade,$memorando,$idUsuario,$siape);
 

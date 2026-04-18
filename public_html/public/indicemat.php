@@ -10,9 +10,9 @@ $siape = $_SESSION['siape'];
 if(!empty($_POST)){
 csrf_validate();
 
-$quantidade      = $_POST['quantidade'];
-$idGrupoMaterial = $_POST['material'];
-$localizacao     = $_POST['localizacao'];
+$quantidade      = req_int('quantidade', 0, 'POST');
+$idGrupoMaterial = req_str('material', '', 'POST', 50);
+$localizacao     = req_id('localizacao', 'POST');
 $foto            = $_FILES["foto"];
 $error;
 

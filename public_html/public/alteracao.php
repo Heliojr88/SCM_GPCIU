@@ -12,22 +12,24 @@ if(!empty($_POST)){
 $UsuarioLogado = $_SESSION['nome'];
 $idUsuario = $_SESSION['idUsuario'];
 $siape = $_SESSION['siape'];
- 		 
-$descricao = $_POST['alteracao'];
-$idGrupoMaterial = $_POST['material'];
-$idLocalizacao = $_POST['Localizacao'];
-$quantidade = $_POST['quantidade'];
-$memorandoSei = $_POST['memorandoSei'];
 
-	
-	$posicao = strpos($idGrupoMaterial,'/');	
+$descricao = req_str('alteracao', '', 'POST', 1000);
+$idGrupoMaterial = req_str('material', '', 'POST', 50);
+$quantidade = req_int('quantidade', 0, 'POST');
+$memorandoSei = req_str('memorandoSei', '', 'POST', 100);
+
+	$posicao = strpos($idGrupoMaterial,'/');
+	if ($posicao === false) {
+		echo "<script>alert('Material inválido.');window.location.href='alteracao.php';</script>";
+		exit;
+	}
 	// ID Localizacao
-    $idLocalizacao = substr($idGrupoMaterial,$posicao+1,4);
+    $idLocalizacao = (int) substr($idGrupoMaterial,$posicao+1,4);
 	// ID GRUPO MATERIAL
-    $idMaterial = substr($idGrupoMaterial,0,$posicao);	
-	
+    $idMaterial = (int) substr($idGrupoMaterial,0,$posicao);
+
 	$_pdo->insereAlteracao($descricao,$idMaterial,$siape,$idLocalizacao,$quantidade,$memorandoSei);
-	
+
 }								
 
 ?>

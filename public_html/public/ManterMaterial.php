@@ -10,11 +10,11 @@ $siape = $_SESSION['siape'];
 if (!empty($_POST)) {
     csrf_validate();
 
-    $descricao       = $_POST['descricao'];
-    $patrimonio      = $_POST['patrimonio'];
-    $categoria       = $_POST['categoria'];
-    $tipomaterial    = $_POST['tipomaterial'];
-    $idGrupoMaterial = $_POST['material'];
+    $descricao       = req_str('descricao', '', 'POST', 500);
+    $patrimonio      = req_str('patrimonio', '', 'POST', 50);
+    $categoria       = req_id('categoria', 'POST');
+    $tipomaterial    = req_id('tipomaterial', 'POST');
+    $idGrupoMaterial = req_str('material', '', 'POST', 50);
     $foto            = $_FILES["foto"];
     $error;
 

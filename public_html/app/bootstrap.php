@@ -132,3 +132,108 @@ function csrf_validate(): void
         exit('Token CSRF inválido. Recarregue a página e tente novamente.');
     }
 }
+
+/**
+ * Lê um inteiro de $_REQUEST/$_POST/$_GET com validação. Retorna $default se
+ * ausente ou inválido. Use $source para restringir a origem: 'POST' ou 'GET'.
+ */
+function req_int(string $key, ?int $default = null, string $source = 'REQUEST'): ?int
+{
+    $src = req_source($source);
+    if (!isset($src[$key])) {
+        return $default;
+    }
+    $v = filter_var($src[$key], FILTER_VALIDATE_INT);
+    return $v === false ? $default : $v;
+}
+
+/**
+ * Lê um id positivo (>0). Retorna null se ausente, inválido ou não positivo.
+ */
+function req_id(string $key, string $source = 'REQUEST'): ?int
+{
+    $v = req_int($key, null, $source);
+    return ($v !== null && $v > 0) ? $v : null;
+}
+
+/**
+ * Lê uma string com trim e limite de comprimento. Retorna $default se ausente
+ * ou não escalar. $maxLen = 0 desativa o corte.
+ */
+function req_str(string $key, string $default = '', string $source = 'REQUEST', int $maxLen = 500): string
+{
+    $src = req_source($source);
+    if (!isset($src[$key]) || !is_scalar($src[$key])) {
+        return $default;
+    }
+    $s = trim((string) $src[$key]);
+    if ($maxLen > 0 && strlen($s) > $maxLen) {
+        $s = substr($s, 0, $maxLen);
+    }
+    return $s;
+}
+
+/** Resolve a superglobal correspondente ao nome lógico. */
+function req_source(string $source): array
+{
+    switch (strtoupper($source)) {
+        case 'POST':    return $_POST;
+        case 'GET':     return $_GET;
+        case 'REQUEST': return $_REQUEST;
+    }
+    return $_REQUEST;
+}
+
+/** Retorna o IP do cliente, respeitando proxy reverso se configurado. */
+function client_ip(): string
+{
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    return filter_var($ip, FILTER_VALIDATE_IP) ?: '0.0.0.0';
+}
+
+/** Caminho do arquivo JSON que guarda o contador do rate limit. */
+function rate_limit_file(string $key): string
+{
+    $dir = __DIR__ . '/../storage/ratelimit';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0700, true);
+    }
+    return $dir . '/' . sha1($key) . '.json';
+}
+
+/**
+ * Incrementa o contador do rate limit para $key e retorna true se o limite foi
+ * atingido dentro da janela $windowSeconds.
+ */
+function rate_limit_hit(string $key, int $maxAttempts, int $windowSeconds): bool
+{
+    $file = rate_limit_file($key);
+    $now = time();
+    $data = ['count' => 0, 'first' => $now];
+
+    if (is_file($file)) {
+        $raw = @file_get_contents($file);
+        $decoded = $raw !== false ? json_decode($raw, true) : null;
+        if (is_array($decoded) && isset($decoded['first'], $decoded['count'])) {
+            $data = $decoded;
+        }
+    }
+
+    if ($now - (int) $data['first'] > $windowSeconds) {
+        $data = ['count' => 0, 'first' => $now];
+    }
+
+    $data['count'] = (int) $data['count'] + 1;
+    @file_put_contents($file, json_encode($data), LOCK_EX);
+
+    return $data['count'] > $maxAttempts;
+}
+
+/** Zera o contador de rate limit (ex.: após login bem-sucedido). */
+function rate_limit_reset(string $key): void
+{
+    $file = rate_limit_file($key);
+    if (is_file($file)) {
+        @unlink($file);
+    }
+}

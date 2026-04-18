@@ -1,0 +1,4 @@
+# Bloqueia acesso direto ao diretório de storage do SCM_GPCIU.
+# Arquivos aqui contêm contadores de rate limit e dados internos.
+Require all denied
+Deny from all

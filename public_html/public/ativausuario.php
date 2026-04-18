@@ -17,8 +17,8 @@ if($master['master'] != 1){
  if(!empty($_POST)){
     csrf_validate();
 
-    $siapeUsuario   = $_POST['usuario'];
-    $ativar  = $_POST['ativar'];
+    $siapeUsuario   = preg_replace('/\D+/', '', req_str('usuario', '', 'POST', 20));
+    $ativar         = req_int('ativar', 0, 'POST');
 
  //ativa/desativa usuário
  $ativa = $_pdo->ativaUsuario($ativar,$siapeUsuario);

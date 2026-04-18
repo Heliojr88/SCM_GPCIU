@@ -8,9 +8,9 @@ $nome = $_SESSION['nome'];
 if(!empty($_POST)){
 	csrf_validate();
 
-$novalocalizacao = $_POST['novalocalizacao'];
-$idLocalizacao   = $_POST['localizacao'];
-$ativo           = $_POST['ativa'];
+$novalocalizacao = req_str('novalocalizacao', '', 'POST', 200);
+$idLocalizacao   = req_id('localizacao', 'POST');
+$ativo           = req_int('ativa', 0, 'POST');
 
 $manterLocalizacao = $_pdo->manterLocalizacao($novalocalizacao,$idLocalizacao,$ativo); 		
 

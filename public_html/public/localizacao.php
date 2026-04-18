@@ -13,7 +13,12 @@ if (!empty($_POST)){
     $idUsuario     = $_SESSION['idUsuario'];
     $siape         = $_SESSION['siape'];
 
-    $localizacao = $_POST['localizacao'];
+    $localizacao = req_str('localizacao', '', 'POST', 200);
+
+    if ($localizacao === '') {
+        echo "<script>alert('Informe a localização.');window.location.href='localizacao.php';</script>";
+        exit;
+    }
 
     $cadastro = $_pdo->insereLocalizacao($localizacao);
     

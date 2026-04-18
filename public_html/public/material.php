@@ -10,13 +10,13 @@ $siape = $_SESSION['siape'];
    if(!empty($_POST)){
 	csrf_validate();
 
-	$descricao = $_POST['descricao'];
-	$quantidade = $_POST['quantidade'];
-	$patrimonio = $_POST['patrimonio'];
-	$categoria = $_POST['categoria'];
-	$localizacao = $_POST['localizacao'];
-        $subLocalizacao = $_POST['sublocalizacaoNew'];
-	$tipomaterial = $_POST['tipomaterial'];
+	$descricao = req_str('descricao', '', 'POST', 500);
+	$quantidade = req_int('quantidade', 0, 'POST');
+	$patrimonio = req_str('patrimonio', '', 'POST', 50);
+	$categoria = req_id('categoria', 'POST');
+	$localizacao = req_id('localizacao', 'POST');
+        $subLocalizacao = req_id('sublocalizacaoNew', 'POST');
+	$tipomaterial = req_id('tipomaterial', 'POST');
 	$foto = $_FILES["foto"];
         $error;
         $nome_imagem;

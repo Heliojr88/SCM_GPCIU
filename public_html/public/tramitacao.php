@@ -13,12 +13,12 @@ $UsuarioLogado = $_SESSION['nome'];
 $idUsuario     = $_SESSION['idUsuario'];
 $siape         = $_SESSION['siape'];
  		 
-$origem         = $_POST['origem'];
-$destino        = $_POST['destino'];
-$quantidade     = $_POST['quantidade'];
-$idmaterial     = $_POST['material'];
-$motivo         = $_POST['motivo'];
-$sublocalizacao = $_POST['sublocalizacao'];
+$origem         = req_id('origem', 'POST');
+$destino        = req_id('destino', 'POST');
+$quantidade     = req_int('quantidade', 0, 'POST');
+$idmaterial     = req_str('material', '', 'POST', 50);
+$motivo         = req_str('motivo', '', 'POST', 1000);
+$sublocalizacao = req_id('sublocalizacao', 'POST');
 
 if (empty($sublocalizacao)) {
    $sublocalizacao = 0;

@@ -10,11 +10,18 @@ if (isset($_GET['q']) && $_GET['q'] === 'logout') {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
     csrf_validate();
-    $siape = trim((string) ($_POST['siape'] ?? ''));
+    $siape = req_str('siape', '', 'POST', 30);
     $senha = (string) ($_POST['senha'] ?? '');
 
     if ($siape === '' || $senha === '') {
         echo "<script>alert('Informe SIAPE e senha.');window.location.href='login.php';</script>";
+        exit;
+    }
+
+    // Rate limit: 5 tentativas por IP+siape em 15 minutos.
+    $rlKey = 'login:' . client_ip() . ':' . strtolower($siape);
+    if (rate_limit_hit($rlKey, 5, 900)) {
+        echo "<script>alert('Muitas tentativas de login. Aguarde 15 minutos e tente novamente.');window.location.href='login.php';</script>";
         exit;
     }
 
@@ -37,6 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
     $_SESSION['idUsuario'] = $usuario['idUsuario'];
     $_SESSION['siape']     = $usuario['Siape'];
     $_SESSION['permissao'] = $usuario['Permissao_idPermissao'];
+
+    rate_limit_reset($rlKey);
 
     header('Location: index6.php');
     exit;

@@ -4,7 +4,11 @@ require __DIR__ . '/../app/bootstrap.php';
 requireLogin();
 
 $nome = $_SESSION['nome'];
-$idLocalizacao = $_GET['idLocalizacao'] ?? null;
+$idLocalizacao = req_id('idLocalizacao', 'GET');
+if ($idLocalizacao === null) {
+    header('Location: index6.php');
+    exit;
+}
 ?>
 
 
@@ -197,7 +201,7 @@ $idLocalizacao = $_GET['idLocalizacao'] ?? null;
 			if (!empty($_POST)) {
 				csrf_validate();
 			}
-			$sublocalizacao = $_POST['sublocalizacao'] ?? null;
+			$sublocalizacao = req_id('sublocalizacao', 'POST');
 
                         if(!empty($sublocalizacao)){
                             $consulta = $_pdo->getMaterialSubLocal($idLocalizacao,$sublocalizacao);

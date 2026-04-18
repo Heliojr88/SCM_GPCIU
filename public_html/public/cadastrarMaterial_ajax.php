@@ -5,7 +5,8 @@ requireLogin();
 $nome = $_SESSION['nome'];
 if(isset($_REQUEST['localizacao']))
 {
-$localizacao = $_REQUEST['localizacao'];
+$localizacao = req_id('localizacao');
+if ($localizacao === null) { exit; }
 $consultasublocal = $_pdo->getSubLocalizacao($localizacao);
     WHILE($sublocal = $consultasublocal->fetch(PDO::FETCH_ASSOC)):
 

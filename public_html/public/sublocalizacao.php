@@ -13,9 +13,9 @@ $UsuarioLogado = $_SESSION['nome'];
 $idUsuario     = $_SESSION['idUsuario'];
 $siape         = $_SESSION['siape'];
 
-$sublocalizacao  = $_POST['sublocalizacao'];
-$idLocalizacao   = $_POST['localizacao'];
-$tramitavel      = $_POST['tramitavel'];
+$sublocalizacao  = req_str('sublocalizacao', '', 'POST', 200);
+$idLocalizacao   = req_id('localizacao', 'POST');
+$tramitavel      = req_int('tramitavel', 0, 'POST');
 
 if (empty($tramitavel)){
     $tramitavel = 0;

@@ -13,12 +13,12 @@ if(!empty($_POST)){
     $idUsuario     = $_SESSION['idUsuario'];
     $siape         = $_SESSION['siape'];
     
-    $origem                = $_POST['origem'];
-    $destino               = $_POST['destino'];
-    $quantidade            = $_POST['quantidade'];
-    $motivo                = $_POST['motivo'];
-    $sublocalizacaoOrigem  = $_POST['sublocalizacaoorigem'];
-    $sublocalizacaoDestino = $_POST['sublocalizacaodestino'];
+    $origem                = req_id('origem', 'POST');
+    $destino               = req_id('destino', 'POST');
+    $quantidade            = req_int('quantidade', 0, 'POST');
+    $motivo                = req_str('motivo', '', 'POST', 1000);
+    $sublocalizacaoOrigem  = req_id('sublocalizacaoorigem', 'POST');
+    $sublocalizacaoDestino = req_id('sublocalizacaodestino', 'POST');
 
     if (empty($sublocalizacaoOrigem)) {
         $sublocalizacaoOrigem = 0;
