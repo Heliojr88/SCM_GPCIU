@@ -1,24 +1,44 @@
 <?php
-session_start();
-require("../app/pdo.php");
+require __DIR__ . '/../app/bootstrap.php';
 
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
-$_pdo = new connectDB();
-$_pdo->conectar();
+$nome = $_SESSION['nome'] ?? '';
 
-$nome = $_SESSION['nome'];
+if(!empty($_POST)){
+	csrf_validate();
 
-if(!empty($_POST) or !empty($_GET)){
-	
-$cpf    = $_POST['cpf'];
-$email  = $_POST['email'];
-$siape  = $_POST['siape'];
-$senha  = $_POST['senha'];
-$senha2 = $_POST['senha2'];
+$cpf    = preg_replace('/\D+/', '', req_str('cpf',   '', 'POST', 20));
+$email  = req_str('email', '', 'POST', 150);
+$siape  = preg_replace('/\D+/', '', req_str('siape', '', 'POST', 20));
+$senha  = (string) ($_POST['senha']  ?? '');
+$senha2 = (string) ($_POST['senha2'] ?? '');
 
-if ($senha != $senha2){
+if ($cpf === '' || $email === '' || $siape === '' || $senha === '' || $senha2 === ''){
+       echo"<script language='javascript' type='text/javascript'>alert('Preencha todos os campos.');window.location.href='recuperaSenha.php';</script>";
+       exit;
+}
+
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)){
+       echo"<script language='javascript' type='text/javascript'>alert('Email inválido.');window.location.href='recuperaSenha.php';</script>";
+       exit;
+}
+
+if ($senha !== $senha2){
        echo"<script language='javascript' type='text/javascript'>alert('As senhas digitadas não correspondem entre si');window.location.href='recuperaSenha.php';</script>";
+       exit;
+}
+
+if (strlen($senha) < 6){
+       echo"<script language='javascript' type='text/javascript'>alert('A senha deve ter pelo menos 6 caracteres.');window.location.href='recuperaSenha.php';</script>";
+       exit;
+}
+
+// Rate limit: 5 tentativas por IP+siape em 30 minutos.
+$rlKey = 'reset:' . client_ip() . ':' . strtolower($siape);
+if (rate_limit_hit($rlKey, 5, 1800)) {
+       echo"<script language='javascript' type='text/javascript'>alert('Muitas tentativas de recuperação. Aguarde 30 minutos.');window.location.href='recuperaSenha.php';</script>";
+       exit;
 }
 
 //função PDO para recuperar a senha
@@ -165,6 +185,7 @@ $recupera = $_pdo->recuperaSenha($cpf,$email,$siape,$senha);
                     <br />
                    
 				   <form action="recuperaSenha.php" id="recuperaSenha" name="recuperaSenha" method="POST" class="form-horizontal form-label-left">
+					<?php csrf_field(); ?>
 					
                         <div class="form-group">
                         <label for="email" class="control-label col-md-3 col-sm-3 col-xs-12">Email</label>

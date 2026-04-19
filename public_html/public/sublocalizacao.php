@@ -1,26 +1,21 @@
 <?php
-session_start();
-$UsuarioLogado = $_SESSION['nome'];
-require("../app/pdo.php");
+require __DIR__ . '/../app/bootstrap.php';
+requireLogin(1);
 
-$_pdo = new connectDB();
-$_pdo->conectar();
+$UsuarioLogado = $_SESSION['nome'];
 
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
-if($_SESSION['permissao'] != 1){
-        echo"<script language='javascript' type='text/javascript'>alert('Usuário sem permissão para acessar a funcionalidade!');window.location.href='index.php';</script>";
-}
+if(!empty($_POST)){
+	csrf_validate();
 
-if(!empty($_POST) or !empty($_GET)){
-	 
 $UsuarioLogado = $_SESSION['nome'];
 $idUsuario     = $_SESSION['idUsuario'];
 $siape         = $_SESSION['siape'];
- 		 
-$sublocalizacao  = $_POST['sublocalizacao'];
-$idLocalizacao   = $_POST['localizacao'];
-$tramitavel      = $_POST['tramitavel'];
+
+$sublocalizacao  = req_str('sublocalizacao', '', 'POST', 200);
+$idLocalizacao   = req_id('localizacao', 'POST');
+$tramitavel      = req_int('tramitavel', 0, 'POST');
 
 if (empty($tramitavel)){
     $tramitavel = 0;
@@ -34,16 +29,6 @@ if($cadastrar){
 }
 else{
    echo"<script language='javascript' type='text/javascript'>alert('Sub Localização já cadastrada no sistema');window.location.href='sublocalizacao.php';</script>";  
-}
-
-if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == true))
-{
-	unset($_SESSION['siape']);
-	unset($_SESSION['senha']);
-	
-	echo"<script language='javascript' type='text/javascript'>alert('Gentileza efetue login no Sistema');</script>";
-	
-	header('location:login.php');
 }
 
 }
@@ -99,7 +84,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
               </div>
                <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$UsuarioLogado;?></h2>
+                <h2><?= e($UsuarioLogado) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -189,6 +174,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
                     <br />
                    
                     <form action="sublocalizacao.php" id="ManterLocalizacao" name="ManterLocalizacao" method="POST" class="form-horizontal form-label-left">
+                     <?php csrf_field(); ?>
 
 					   <div class="form-group">
                         <label class="control-label col-md-3 col-sm-3 col-xs-12" for="localizacao">Localização</label>
@@ -201,7 +187,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
 
                               ?>
 						  
-                            <option value="<?=$localizacao['idLocalizacao']?>"><?=$localizacao['Localizacao']?></option>
+                            <option value="<?= e($localizacao['idLocalizacao']) ?>"><?= e($localizacao['Localizacao']) ?></option>
                       
                             <?php
                               ENDWHILE

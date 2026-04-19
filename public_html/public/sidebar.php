@@ -15,7 +15,7 @@
 			  WHILE($localizacao = $consulta->fetch(PDO::FETCH_ASSOC)):
 					  
 		  ?>
-		 <li><a href="indexAll.php?idLocalizacao=<?=$localizacao['idLocalizacao']?>"><?=$localizacao['Localizacao']?></a></li>
+		 <li><a href="indexAll.php?idLocalizacao=<?= e($localizacao['idLocalizacao']) ?>"><?= e($localizacao['Localizacao']) ?></a></li>
                                
 		  <?php
 		   ENDWHILE

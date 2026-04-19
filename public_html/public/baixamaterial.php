@@ -1,40 +1,42 @@
 <?php
-session_start();
-$UsuarioLogado = $_SESSION['nome'];
-require("../app/pdo.php");
+require __DIR__ . '/../app/bootstrap.php';
+requireLogin(1);
 
-$_pdo = new connectDB();
-$_pdo->conectar();
+$UsuarioLogado = $_SESSION['nome'];
 
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
- 
- //verifica se é administrador
- if($_SESSION['permissao'] != 1){
-	   echo"<script language='javascript' type='text/javascript'>alert('Usuário sem permissão para acessar a funcionalidade!');window.location.href='index.php';</script>";
-   }
    
- if(!empty($_POST) or !empty($_GET)){
-	 
+ if(!empty($_POST)){
+	csrf_validate();
+
 $UsuarioLogado = $_SESSION['nome'];
 $idUsuario = $_SESSION['idUsuario'];
 $siape = $_SESSION['siape'];
- 		 
-$alteracao       = $_POST['alteracao'];
-$idGrupoMaterial = $_POST['material'];
-$quantidade      = $_POST['quantidade'];
-$memorando       = $_POST['memorando'];
+
+$alteracao       = req_str('alteracao', '', 'POST', 1000);
+$idGrupoMaterial = req_str('material',  '', 'POST', 50);
+$quantidade      = req_int('quantidade', 0, 'POST');
+$memorando       = req_str('memorando',  '', 'POST', 100);
 
 $posicao = strpos($idGrupoMaterial,'/');
+if ($posicao === false) {
+    echo "<script>alert('Material inválido.');window.location.href='baixamaterial.php';</script>";
+    exit;
+}
 
 // ID LOCALIZAÇÃO
-$idLocal = substr($idGrupoMaterial,$posicao+1,4);
+$idLocal = (int) substr($idGrupoMaterial,$posicao+1,4);
 
 // ID GRUPO MATERIAL
-$idGrupoMat = substr($idGrupoMaterial,0,$posicao);	
+$idGrupoMat = (int) substr($idGrupoMaterial,0,$posicao);
 
 $ativar = $_pdo->baixaMaterial($idGrupoMat,$idLocal,$alteracao,$quantidade,$memorando,$idUsuario,$siape);
 
 if($ativar){
+    audit_log('material.baixa', "$idGrupoMat/$idLocal", [
+        'quantidade' => $quantidade,
+        'memorando'  => $memorando,
+    ]);
     echo"<script language='javascript' type='text/javascript'>alert('Material baixado com sucesso!');</script>";
 }
 else{
@@ -104,7 +106,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
               </div>
                <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$UsuarioLogado;?></h2>
+                <h2><?= e($UsuarioLogado) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -194,6 +196,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
                     <br />
                    
 				   <form action="baixamaterial.php" id="materiais" name="materiais" method="POST" class="form-horizontal form-label-left">
+					<?php csrf_field(); ?>
 
 					  
 					  <div class="form-group">
@@ -207,12 +210,12 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
 					  
 					      ?>
 					         
-							 <option value="<?=$material['idGrupoMaterial'].'/'.$material['Localizacao_idLocalizacao']?>">
-																			   <td><?=$material['DescricaoMat']?></td>
-							                                        (&nbsp<td><?=$material['Localizacao']?></td>
-																	)&nbspQtd:<td><?=$material['Quantidade']?></td>
-																	&nbspPat:&nbsp<td><?=$material['NumPatrimonio']?></td>
-																	&nbspSit:&nbsp<td><?=$material['SituacaoMat']?></td>
+							 <option value="<?= e($material['idGrupoMaterial'].'/'.$material['Localizacao_idLocalizacao']) ?>">
+																			   <td><?= e($material['DescricaoMat']) ?></td>
+							                                        (&nbsp<td><?= e($material['Localizacao']) ?></td>
+																	)&nbspQtd:<td><?= e($material['Quantidade']) ?></td>
+																	&nbspPat:&nbsp<td><?= e($material['NumPatrimonio']) ?></td>
+																	&nbspSit:&nbsp<td><?= e($material['SituacaoMat']) ?></td>
 														 
 							
 																	

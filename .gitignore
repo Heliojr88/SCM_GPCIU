@@ -1,0 +1,36 @@
+# Arquivos sensíveis
+.env
+public_html/app/config.local.php
+
+# Logs
+*.log
+public_html/public/error_log
+
+# Uploads de usuário (fotos de materiais)
+public_html/public/fotos/*
+!public_html/public/fotos/.gitkeep
+!public_html/public/fotos/.htaccess
+
+# Arquivos de SO
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Backups temporários
+*.bak
+*~
+
+# Arquivos temporários de desenvolvimento
+public_html/app/new 1.txt
+public_html/app/teste.txt
+
+# Dependencias / build
+/vendor/
+/composer.lock
+.phpunit.result.cache
+/coverage/

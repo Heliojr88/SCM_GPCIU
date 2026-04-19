@@ -1,0 +1,15 @@
+parameters:
+    level: 3
+    paths:
+        - public_html/app
+        - public_html/public
+    excludePaths:
+        - public_html/vendors/*
+        - public_html/gpciu.com.br/*
+        - public_html/OLD*
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        - '#Variable \$_pdo might not be defined#'
+        - '#Variable \$_SESSION#'
+        - '#Call to an undefined method connectDB::#'

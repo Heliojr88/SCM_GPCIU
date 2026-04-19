@@ -1,25 +1,9 @@
 <?php
 ini_set('default_charset','UTF-8');
-session_start();
-
-require("../app/pdo.php");
-
-$_pdo = new connectDB();
-$_pdo->conectar();
+require __DIR__ . '/../app/bootstrap.php';
+requireLogin();
 
 $nome = $_SESSION['nome'];
-
-if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == true))
-{
-	unset($_SESSION['siape']);
-	unset($_SESSION['senha']);
-	
-	echo"<script language='javascript' type='text/javascript'>alert('Gentileza efetue login no Sistema');</script>";
-	
-	header('location:login.php');
-}
-
-//$logado = $_SESSION['login'];
 
 
 
@@ -73,7 +57,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
               </div>
               <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$nome;?></h2>
+                <h2><?= e($nome) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -120,7 +104,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
               <ul class="nav navbar-nav navbar-right">
                 <li class="">
                   <a href="javascript:;" class="user-profile dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
-                    <img src="images/img2.jpg" alt=""><?=$nome;?>
+                    <img src="images/img2.jpg" alt=""><?= e($nome) ?>
                     <span class=" fa fa-angle-down"></span>
                   </a>
                   <ul class="dropdown-menu dropdown-usermenu pull-right">
@@ -219,12 +203,12 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
 					  ?>
 					  
                         <tr>
-                          <td><?=$material['Quantidade']?></td>
-                          <td><?=$material['DescricaoMat']?></td>
-                          <td><?=$material['TipoMaterial']?></td>
-                          <td><?=$material['Categoria']?></td>
-                          <td><?=$material['Localizacao']?></td>
-                          <td><?=$material['SituacaoMat']?></td>
+                          <td><?= e($material['Quantidade']) ?></td>
+                          <td><?= e($material['DescricaoMat']) ?></td>
+                          <td><?= e($material['TipoMaterial']) ?></td>
+                          <td><?= e($material['Categoria']) ?></td>
+                          <td><?= e($material['Localizacao']) ?></td>
+                          <td><?= e($material['SituacaoMat']) ?></td>
                         </tr>
 						
 						<?php

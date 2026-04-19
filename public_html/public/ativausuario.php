@@ -1,29 +1,28 @@
 <?php
-session_start();
+require __DIR__ . '/../app/bootstrap.php';
+requireLogin();
+
 $nome  = $_SESSION['nome'];
 $siape = $_SESSION['siape'];
-
-require("../app/pdo.php");
-
-$_pdo = new connectDB();
-$_pdo->conectar();
 
 $teste  = $_pdo->getMaster($siape);
 $master = $teste->fetch(PDO::FETCH_ASSOC);
 
 //verifica se o usuário é master
 if($master['master'] != 1){
-	   echo"<script language='javascript' type='text/javascript'>alert('Usuário sem permissão para acessar a funcionalidade!');window.location.href='index7.php';</script>";
-       
+	echo "<script>alert('Usuário sem permissão para acessar a funcionalidade!');window.location.href='index7.php';</script>";
+	exit;
 }
 
- if(!empty($_POST) or !empty($_GET)){
-	 
-    $siapeUsuario   = $_POST['usuario'];
-    $ativar  = $_POST['ativar'];
+ if(!empty($_POST)){
+    csrf_validate();
+
+    $siapeUsuario   = preg_replace('/\D+/', '', req_str('usuario', '', 'POST', 20));
+    $ativar         = req_int('ativar', 0, 'POST');
 
  //ativa/desativa usuário
  $ativa = $_pdo->ativaUsuario($ativar,$siapeUsuario);
+ audit_log($ativar ? 'user.activate' : 'user.deactivate', $siapeUsuario);
  
  if ($ativa==0){
 		echo"<script language='javascript' type='text/javascript'>alert('Falha na ativação do usuário');window.location.href='ativausuario.php';</script>";
@@ -99,7 +98,7 @@ if($master['master'] != 1){
               </div>
                <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$nome;?></h2>
+                <h2><?= e($nome) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -189,6 +188,7 @@ if($master['master'] != 1){
                     <br />
                    
                     <form action="ativausuario.php" id="ativausuario" name="ativausuario" method="POST" class="form-horizontal form-label-left">
+                     <?php csrf_field(); ?>
 
 			<div class="form-group">
                         <label class="control-label col-md-3 col-sm-3 col-xs-12" for="usuario">Usuários</label>
@@ -201,9 +201,9 @@ if($master['master'] != 1){
 
                              ?>
 						  
-                              <option value="<?=$usuario['siape']?>"><td><?=$usuario['nomeUsuario']?></td>
-                                                                   -&nbsp;Siape:&nbsp;<?=$usuario['siape']?></td>
-                                                                        -&nbsp;Ativo:&nbsp; <?=$usuario['ativo']?></td>
+                              <option value="<?= e($usuario['siape']) ?>"><td><?= e($usuario['nomeUsuario']) ?></td>
+                                                                   -&nbsp;Siape:&nbsp;<?= e($usuario['siape']) ?></td>
+                                                                        -&nbsp;Ativo:&nbsp; <?= e($usuario['ativo']) ?></td>
                               </option>
                       
                             <?php

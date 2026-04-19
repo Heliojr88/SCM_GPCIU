@@ -1,34 +1,24 @@
 <?php
-session_start();
-error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
-require("../app/pdo.php");
+require __DIR__ . '/../app/bootstrap.php';
+requireLogin();
 
-$_pdo = new connectDB();
-$_pdo->conectar();
+error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
 $nome = $_SESSION['nome'];
 
-if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == true))
-{
-	unset($_SESSION['siape']);
-	unset($_SESSION['senha']);
-	
-	echo("<script language='javascript' type='text/javascript'>alert('Gentileza realizar login no Sistema!');window.location.href='login.php';</script>");
-	//header("Location:/deposito/public/login.php");
-}
+if(!empty($_POST)){
+   csrf_validate();
 
-if(!empty($_POST) or !empty($_GET)){
-   
 $UsuarioLogado = $_SESSION['nome'];
 $idUsuario     = $_SESSION['idUsuario'];
 $siape         = $_SESSION['siape'];
  		 
-$origem         = $_POST['origem'];
-$destino        = $_POST['destino'];
-$quantidade     = $_POST['quantidade'];
-$idmaterial     = $_POST['material'];
-$motivo         = $_POST['motivo'];
-$sublocalizacao = $_POST['sublocalizacao'];
+$origem         = req_id('origem', 'POST');
+$destino        = req_id('destino', 'POST');
+$quantidade     = req_int('quantidade', 0, 'POST');
+$idmaterial     = req_str('material', '', 'POST', 50);
+$motivo         = req_str('motivo', '', 'POST', 1000);
+$sublocalizacao = req_id('sublocalizacao', 'POST');
 
 if (empty($sublocalizacao)) {
    $sublocalizacao = 0;
@@ -39,9 +29,15 @@ if (($origem == $destino) and ( empty($sublocalizacao))){
     echo"<script language='javascript' type='text/javascript'>alert('A Origem deve ser diferente do destino!');</script>";
 } 
 else{
-   $tramitar = $_pdo->tramitaMaterial($origem,$destino,$quantidade,$idmaterial,$motivo,$sublocalizacao,$siape,$idUsuario); 
-  
+   $tramitar = $_pdo->tramitaMaterial($origem,$destino,$quantidade,$idmaterial,$motivo,$sublocalizacao,$siape,$idUsuario);
+
    if($tramitar){
+       audit_log('material.tramita', "$origem->$destino", [
+           'material'       => $idmaterial,
+           'quantidade'     => $quantidade,
+           'motivo'         => $motivo,
+           'sublocalizacao' => $sublocalizacao,
+       ]);
        echo"<script language='javascript' type='text/javascript'>alert('Tramitação realizada com sucesso');</script>";
    }
    else{
@@ -108,7 +104,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
               </div>
                <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$nome;?></h2>
+                <h2><?= e($nome) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -198,6 +194,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
                     <br />
                    
 			<form action="tramitacao.php" id="materiais" name="materiais" method="POST" class="form-horizontal form-label-left">
+			 <?php csrf_field(); ?>
 
 				   				  
 			<div class="form-group">
@@ -212,7 +209,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
 					  
                             ?>
 						  
-                            <option value="<?=$localizacao['idLocalizacao']?>"><?=$localizacao['Localizacao']?></option>
+                            <option value="<?= e($localizacao['idLocalizacao']) ?>"><?= e($localizacao['Localizacao']) ?></option>
                       
                             <?php
                               ENDWHILE
@@ -243,7 +240,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
 
                               ?>
 						  
-                            <option value="<?=$localizacao['idLocalizacao']?>"><?=$localizacao['Localizacao']?></option>
+                            <option value="<?= e($localizacao['idLocalizacao']) ?>"><?= e($localizacao['Localizacao']) ?></option>
                       
                             <?php
                               ENDWHILE

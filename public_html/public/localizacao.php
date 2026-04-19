@@ -1,25 +1,24 @@
 <?php
-session_start();
+require __DIR__ . '/../app/bootstrap.php';
+requireLogin(1);
+
 $UsuarioLogado = $_SESSION['nome'];
-
-require("../app/pdo.php");
-
-$_pdo = new connectDB();
-$_pdo->conectar();
 
 error_reporting(E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
-if ($_SESSION['permissao'] != 1) {
-    echo"<script language='javascript' type='text/javascript'>alert('Usuário sem permissão para acessar a funcionalidade!');window.location.href='index.php';</script>";
-}
-
-if (!empty($_POST) or ! empty($_GET)){
+if (!empty($_POST)){
+    csrf_validate();
 
     $UsuarioLogado = $_SESSION['nome'];
     $idUsuario     = $_SESSION['idUsuario'];
     $siape         = $_SESSION['siape'];
 
-    $localizacao = $_POST['localizacao'];
+    $localizacao = req_str('localizacao', '', 'POST', 200);
+
+    if ($localizacao === '') {
+        echo "<script>alert('Informe a localização.');window.location.href='localizacao.php';</script>";
+        exit;
+    }
 
     $cadastro = $_pdo->insereLocalizacao($localizacao);
     
@@ -32,14 +31,6 @@ if (!empty($_POST) or ! empty($_GET)){
 }
 
 
-if ((!isset($_SESSION['siape']) == true) and ( !isset($_SESSION['senha']) == true)) {
-    unset($_SESSION['siape']);
-    unset($_SESSION['senha']);
-
-    echo"<script language='javascript' type='text/javascript'>alert('Gentileza efetue login no Sistema');</script>";
-
-    header('location:login.php');
-}
 ?>
 
 <!DOCTYPE html>
@@ -92,7 +83,7 @@ if ((!isset($_SESSION['siape']) == true) and ( !isset($_SESSION['senha']) == tru
               </div>
                <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$UsuarioLogado;?></h2>
+                <h2><?= e($UsuarioLogado) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -182,6 +173,7 @@ if ((!isset($_SESSION['siape']) == true) and ( !isset($_SESSION['senha']) == tru
                     <br />
                    
 				   <form action="localizacao.php" id="localizacao" name="localizacao" method="POST" class="form-horizontal form-label-left">
+					<?php csrf_field(); ?>
 
 					  
 					 

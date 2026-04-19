@@ -1,23 +1,14 @@
 <?php
 ini_set('default_charset','UTF-8');
-session_start();
-
-require("../app/pdo.php");
-
-$_pdo = new connectDB();
-$_pdo->conectar();
+require __DIR__ . '/../app/bootstrap.php';
+requireLogin();
 
 $nome = $_SESSION['nome'];
-$idLocalizacao = $_GET['idLocalizacao'];
-
-if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == true))
-{
-	unset($_SESSION['siape']);
-	unset($_SESSION['senha']);
-	
-	echo("<script language='javascript' type='text/javascript'>alert('Gentileza realizar login no Sistema!');window.location.href='login.php';</script>");
+$idLocalizacao = req_id('idLocalizacao', 'GET');
+if ($idLocalizacao === null) {
+    header('Location: index6.php');
+    exit;
 }
-
 ?>
 
 
@@ -37,7 +28,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
 
           $local = $loc->fetch(PDO::FETCH_ASSOC);
     ?>
-        Relatório - <?=$local['Localizacao'];?>            
+        Relatório - <?= e($local['Localizacao']) ?>            
     </title>
 
     <!-- Bootstrap -->
@@ -73,7 +64,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
               </div>
               <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$nome;?></h2>
+                <h2><?= e($nome) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -128,7 +119,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
                                 $local = $loc->fetch(PDO::FETCH_ASSOC);
 				  
 			  ?>
-                <h3>Relatório - <?=$local['Localizacao'];?> <small> </small></h3>
+                <h3>Relatório - <?= e($local['Localizacao']) ?> <small> </small></h3>
                </div>
                 
               
@@ -136,6 +127,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
                         
                     </div>
 				<form method="POST">
+				 <?php csrf_field(); ?>
 					<div class="form-group">
 						<button type="submit" class="btn btn-success" style="float: right; margin-left: 10px">Filtrar</button>
 					<select id="sublocalizacao" name="sublocalizacao" class="form-control" name="sublocalizacao" style="width: 200px; float: right">
@@ -146,7 +138,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
 							  WHILE($sublocal = $consultasublocal->fetch(PDO::FETCH_ASSOC)):
 
 					?>
-							 <option value="<?=$sublocal['idSubLocalizacao']?>" <?= ($sublocal['idSubLocalizacao'] == $_POST['sublocalizacao'] ? 'selected' : '') ?> <td><?=$sublocal['subLocalizacao']?></td> </option>
+							 <option value="<?= e($sublocal['idSubLocalizacao']) ?>" <?= ($sublocal['idSubLocalizacao'] == $_POST['sublocalizacao'] ? 'selected' : '') ?> <td><?= e($sublocal['subLocalizacao']) ?></td> </option>
 
 					<?php
 					ENDWHILE;
@@ -206,8 +198,11 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
                       <tbody>
 					  
                       <?php
-			$sublocalizacao = $_POST['sublocalizacao'];
-                        
+			if (!empty($_POST)) {
+				csrf_validate();
+			}
+			$sublocalizacao = req_id('sublocalizacao', 'POST');
+
                         if(!empty($sublocalizacao)){
                             $consulta = $_pdo->getMaterialSubLocal($idLocalizacao,$sublocalizacao);
                         }else{
@@ -218,13 +213,13 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
 			?>
 					  
                         <tr>
-                          <td><?=$material['Quantidade']?></td>
-                          <td><?=$material['DescricaoMat']?></td>
-                          <td><?=$material['NumPatrimonio']?></td>
-                          <td><?=$material['Categoria']?></td>
-                          <td><?=$material['Localizacao']?></td>
-                          <td><?=$material['subLocalizacao']?></td>
-                          <td><?=$material['SituacaoMat']?></td>
+                          <td><?= e($material['Quantidade']) ?></td>
+                          <td><?= e($material['DescricaoMat']) ?></td>
+                          <td><?= e($material['NumPatrimonio']) ?></td>
+                          <td><?= e($material['Categoria']) ?></td>
+                          <td><?= e($material['Localizacao']) ?></td>
+                          <td><?= e($material['subLocalizacao']) ?></td>
+                          <td><?= e($material['SituacaoMat']) ?></td>
                         </tr>
 						
                         <?php

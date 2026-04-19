@@ -8,7 +8,7 @@
         <form action="#" method="post">
             Código de barras
             (<a href="http://zxing.appspot.com/scan?ret=http://www.agenciageeks.com.br/deposito/public/consultaMaterial.php?codigo={CODE}">Leitor</a>):
-            <input type="text" name="cod" value="<?= $_GET['codigo'] ?>" />
+            <input type="text" name="cod" value="<?= e($_GET['codigo']) ?>" />
         </form>
     </body>
 </html>

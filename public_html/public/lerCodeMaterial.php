@@ -1,22 +1,8 @@
 <?php
-session_start();
-
-require("../app/pdo.php");
-
-$_pdo = new connectDB();
-$_pdo->conectar();
+require __DIR__ . '/../app/bootstrap.php';
+requireLogin();
 
 $nome = $_SESSION['nome'];
-
-if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == true))
-{
-	unset($_SESSION['siape']);
-	unset($_SESSION['senha']);
-	
-	echo("<script language='javascript' type='text/javascript'>alert('Gentileza realizar login no Sistema!');window.location.href='login.php';</script>");
-}
- 
-//echo $_POST['materiais'];
 ?>
 
 <!DOCTYPE html>
@@ -69,7 +55,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
               </div>
                <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$nome;?></h2>
+                <h2><?= e($nome) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -152,7 +138,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
 
 					  Entre com o código QR
 						(<a href="http://zxing.appspot.com/scan?ret=http://www.agenciageeks.com.br/deposito/public/consultaMaterial.php?codigo={CODE}">LEITOR QR</a>):
-						<input type="text" name="codigo" value="<?= $_GET['codigo'] ?>" />
+						<input type="text" name="codigo" value="<?= e($_GET['codigo']) ?>" />
 					 
 					  
 					  					  

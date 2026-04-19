@@ -1,93 +1,29 @@
 <?php
-session_start();
-require("../app/pdo.php");
-
-$_pdo = new connectDB();
-$_pdo->conectar();
+require __DIR__ . '/../app/bootstrap.php';
+requireLogin(1);
 
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
 $nome = $_SESSION['nome'];
 $siape = $_SESSION['siape'];
+	
+   if(!empty($_POST)){
+	csrf_validate();
 
-if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == true))
-{
-	unset($_SESSION['siape']);
-	unset($_SESSION['senha']);
-	
-	echo"<script language='javascript' type='text/javascript'>alert('Gentileza efetue login no Sistema');</script>";
-	
-	header('location:login.php');
-}
+	$descricao = req_str('descricao', '', 'POST', 500);
+	$quantidade = req_int('quantidade', 0, 'POST');
+	$patrimonio = req_str('patrimonio', '', 'POST', 50);
+	$categoria = req_id('categoria', 'POST');
+	$localizacao = req_id('localizacao', 'POST');
+        $subLocalizacao = req_id('sublocalizacaoNew', 'POST');
+	$tipomaterial = req_id('tipomaterial', 'POST');
 
-   if($_SESSION['permissao'] != 1){
-	   echo"<script language='javascript' type='text/javascript'>alert('Usuário sem permissão para acessar a funcionalidade!');window.location.href='index.php';</script>";
-   }	
-	
-   if(!empty($_POST) or !empty($_GET)){
-		
-	$descricao = $_POST['descricao'];	 	
-	$quantidade = $_POST['quantidade'];
-	$patrimonio = $_POST['patrimonio'];
-	$categoria = $_POST['categoria'];
-	$localizacao = $_POST['localizacao'];
-        $subLocalizacao = $_POST['sublocalizacaoNew'];
-	$tipomaterial = $_POST['tipomaterial'];
-	$foto = $_FILES["foto"];
-        $error;
-        $nome_imagem;
-	
-	// Se a foto estiver sido selecionada
-	if (!empty($foto["name"])) {
-		
-		// Verifica se o arquivo é uma imagem
-    	if(!preg_match("/^image\/(pjpeg|jpeg|png|gif|bmp)$/", $foto["type"])){
-     	   $error[1] = "Isso não é uma imagem.";
-   	 	}
-	/*	
-		// Largura máxima em pixels
-		$largura = 150;
-		// Altura máxima em pixels
-		$altura = 180;
-		// Tamanho máximo do arquivo em bytes
-		$tamanho = 1000;
- 	
-		// Pega as dimensões da imagem
-		$dimensoes = getimagesize($foto["tmp_name"]);
-		
-	
-		// Verifica se a largura da imagem é maior que a largura permitida
-		if($dimensoes[0] > $largura) {
-			$error[2] = "A largura da imagem não deve ultrapassar ".$largura." pixels";
-		}
- 
-		// Verifica se a altura da imagem é maior que a altura permitida
-		if($dimensoes[1] > $altura) {
-			$error[3] = "Altura da imagem não deve ultrapassar ".$altura." pixels";
-		}
-		
-		// Verifica se o tamanho da imagem é maior que o tamanho permitido
-		if($foto["size"] > $tamanho) {
-   		 	$error[4] = "A imagem deve ter no máximo ".$tamanho." bytes";
-		}
- */
-		// Se não houver nenhum erro
-		if (count($error) == 0) {
-		
-			// Pega extensão da imagem
-			preg_match("/\.(gif|bmp|png|jpg|jpeg){1}$/i", $foto["name"], $ext);
- 
-        	// Gera um nome único para a imagem
-        	$nome_imagem = md5(uniqid(time())) . "." . $ext[1];
- 
-        	// Caminho de onde ficará a imagem
-        	 $caminho_imagem = "fotos/" . $nome_imagem;
- 
-			// Faz o upload da imagem para seu respectivo caminho
-			move_uploaded_file($foto["tmp_name"], $caminho_imagem);
-			unset($foto);
-		}    
-	}	
+	$uploadErr = null;
+	$nome_imagem = upload_image('foto', __DIR__ . '/fotos', $uploadErr);
+	if ($uploadErr !== null) {
+		echo "<script>alert('" . e($uploadErr) . "');window.location.href='material.php';</script>";
+		exit;
+	}
 	
 	if($quantidade <= 0){
 		echo"<script language='javascript' type='text/javascript'>alert('Valor inválido para Quantidade');window.location.href='material.php';</script>";
@@ -154,7 +90,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
               </div>
               <div class="profile_info">
                 <span>Bem vindo,</span>
-				<h2><?=$nome?></h2>
+				<h2><?= e($nome) ?></h2>
                 <h2></h2>
               </div>
             </div>
@@ -244,7 +180,8 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
                   <div class="x_content">
                     <br />
                     
-                   <form action="<?= $_SERVER['PHP_SELF']?>" id="material" name="material" method="POST"  enctype="multipart/form-data"  class="form-horizontal form-label-left">
+                   <form action="<?= e($_SERVER['PHP_SELF'])?>" id="material" name="material" method="POST"  enctype="multipart/form-data"  class="form-horizontal form-label-left">
+                      <?php csrf_field(); ?>
 
                       <div class="form-group">
                         <label class="control-label col-md-3 col-sm-3 col-xs-12" for="descricao">Descrição<span class="required">*</span>
@@ -281,7 +218,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
 					  
 					      ?>
 						  
-                            <option value="<?=$localizacao['idLocalizacao']?>"><?=$localizacao['Localizacao']?></option>
+                            <option value="<?= e($localizacao['idLocalizacao']) ?>"><?= e($localizacao['Localizacao']) ?></option>
                       
 						  <?php
 						    ENDWHILE

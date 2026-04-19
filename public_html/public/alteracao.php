@@ -1,44 +1,35 @@
 <?php
-session_start();
+require __DIR__ . '/../app/bootstrap.php';
+requireLogin();
+
 $UsuarioLogado = $_SESSION['nome'];
-
-if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == true))
-{
-	unset($_SESSION['siape']);
-	unset($_SESSION['senha']);
-	
-	echo"<script language='javascript' type='text/javascript'>alert('Gentileza efetue login no Sistema');</script>";
-	header('location:login.php');
-}
-
-require("../app/pdo.php");
-
-$_pdo = new connectDB();
-$_pdo->conectar();
 
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
-if(!empty($_POST) or !empty($_GET)){
-	 
+if(!empty($_POST)){
+	csrf_validate();
+
 $UsuarioLogado = $_SESSION['nome'];
 $idUsuario = $_SESSION['idUsuario'];
 $siape = $_SESSION['siape'];
- 		 
-$descricao = $_POST['alteracao'];
-$idGrupoMaterial = $_POST['material'];
-$idLocalizacao = $_POST['Localizacao'];
-$quantidade = $_POST['quantidade'];
-$memorandoSei = $_POST['memorandoSei'];
 
-	
-	$posicao = strpos($idGrupoMaterial,'/');	
+$descricao = req_str('alteracao', '', 'POST', 1000);
+$idGrupoMaterial = req_str('material', '', 'POST', 50);
+$quantidade = req_int('quantidade', 0, 'POST');
+$memorandoSei = req_str('memorandoSei', '', 'POST', 100);
+
+	$posicao = strpos($idGrupoMaterial,'/');
+	if ($posicao === false) {
+		echo "<script>alert('Material inválido.');window.location.href='alteracao.php';</script>";
+		exit;
+	}
 	// ID Localizacao
-    $idLocalizacao = substr($idGrupoMaterial,$posicao+1,4);
+    $idLocalizacao = (int) substr($idGrupoMaterial,$posicao+1,4);
 	// ID GRUPO MATERIAL
-    $idMaterial = substr($idGrupoMaterial,0,$posicao);	
-	
+    $idMaterial = (int) substr($idGrupoMaterial,0,$posicao);
+
 	$_pdo->insereAlteracao($descricao,$idMaterial,$siape,$idLocalizacao,$quantidade,$memorandoSei);
-	
+
 }								
 
 ?>
@@ -93,7 +84,7 @@ $memorandoSei = $_POST['memorandoSei'];
               </div>
                <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$UsuarioLogado;?></h2>
+                <h2><?= e($UsuarioLogado) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -183,6 +174,7 @@ $memorandoSei = $_POST['memorandoSei'];
                     <br />
                    
 				   <form action="alteracao.php" id="materiais" name="materiais" method="POST" class="form-horizontal form-label-left">
+					<?php csrf_field(); ?>
 
 					  
 					  <div class="form-group">
@@ -196,12 +188,12 @@ $memorandoSei = $_POST['memorandoSei'];
 					  
 					      ?>
 					         
-							 <option value="<?=$material['idGrupoMaterial'].'/'.$material['Localizacao_idLocalizacao']?>">
-																			   <td><?=$material['DescricaoMat']?></td>
-							                                        (&nbsp<td><?=$material['Localizacao']?></td>
-																	)&nbspQtd:<td><?=$material['Quantidade']?></td>
-																	&nbspPat:&nbsp<td><?=$material['NumPatrimonio']?></td>
-																	&nbspSit:&nbsp<td><?=$material['SituacaoMat']?></td>
+							 <option value="<?= e($material['idGrupoMaterial'].'/'.$material['Localizacao_idLocalizacao']) ?>">
+																			   <td><?= e($material['DescricaoMat']) ?></td>
+							                                        (&nbsp<td><?= e($material['Localizacao']) ?></td>
+																	)&nbspQtd:<td><?= e($material['Quantidade']) ?></td>
+																	&nbspPat:&nbsp<td><?= e($material['NumPatrimonio']) ?></td>
+																	&nbspSit:&nbsp<td><?= e($material['SituacaoMat']) ?></td>
 														 
 							
 																	

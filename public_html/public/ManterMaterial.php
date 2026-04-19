@@ -1,74 +1,28 @@
 <?php
-session_start();
-require("../app/pdo.php");
+require __DIR__ . '/../app/bootstrap.php';
+requireLogin(1);
 
 error_reporting(E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
-
-$_pdo = new connectDB();
-$_pdo->conectar();
 
 $nome = $_SESSION['nome'];
 $siape = $_SESSION['siape'];
 
-if ((!isset($_SESSION['siape']) == true) and ( !isset($_SESSION['senha']) == true)) {
-    unset($_SESSION['siape']);
-    unset($_SESSION['senha']);
+if (!empty($_POST)) {
+    csrf_validate();
 
-    echo("<script language='javascript' type='text/javascript'>alert('Gentileza realizar login no Sistema!');window.location.href='login.php';</script>");
-}
+    $descricao       = req_str('descricao', '', 'POST', 500);
+    $patrimonio      = req_str('patrimonio', '', 'POST', 50);
+    $categoria       = req_id('categoria', 'POST');
+    $tipomaterial    = req_id('tipomaterial', 'POST');
+    $idGrupoMaterial = req_str('material', '', 'POST', 50);
 
-if ($_SESSION['permissao'] != 1) {
-    echo"<script language='javascript' type='text/javascript'>alert('Usuário sem permissão para acessar a funcionalidade!');window.location.href='index.php';</script>";
-}
-
-if (!empty($_POST) or ! empty($_GET)) {
-
-    $descricao       = $_POST['descricao'];
-    $patrimonio      = $_POST['patrimonio'];
-    $categoria       = $_POST['categoria'];
-    $tipomaterial    = $_POST['tipomaterial'];
-    $idGrupoMaterial = $_POST['material'];
-    $foto            = $_FILES["foto"];
-    $error;
-
-    // Se a foto estiver sido selecionada
-    if (!empty($foto["name"])) {
-
-        // Largura máxima em pixels
-        $largura = 150;
-        // Altura máxima em pixels
-        $altura = 180;
-        // Tamanho máximo do arquivo em bytes
-        $tamanho = 1000;
-
-        // Verifica se o arquivo é uma imagem
-        if (!preg_match("/^image\/(pjpeg|jpeg|png|gif|bmp)$/", $foto["type"])) {
-            $error[1] = "Isso não é uma imagem.";
-        }
-
-        // Pega as dimensões da imagem
-        $dimensoes = getimagesize($foto["tmp_name"]);
-
-        // Se não houver nenhum erro
-        if (count($error) == 0) {
-
-            // Pega extensão da imagem
-            preg_match("/\.(gif|bmp|png|jpg|jpeg){1}$/i", $foto["name"], $ext);
-
-            // Gera um nome único para a imagem
-            $nome_imagem = md5(uniqid(time())) . "." . $ext[1];
-
-            // Caminho de onde ficará a imagem
-            $caminho_imagem = "fotos/" . $nome_imagem;
-
-            // Faz o upload da imagem para seu respectivo caminho
-            move_uploaded_file($foto["tmp_name"], $caminho_imagem);
-
-            // Insere os dados no banco
-            //$sql = mysql_query("INSERT INTO usuarios VALUES ('', '".$nome."', '".$email."', '".$nome_imagem."')");
-        }
+    $uploadErr = null;
+    $nome_imagem = upload_image('foto', __DIR__ . '/fotos', $uploadErr);
+    if ($uploadErr !== null) {
+        echo "<script>alert('" . e($uploadErr) . "');window.location.href='ManterMaterial.php';</script>";
+        exit;
     }
-    
+
     $manter = $_pdo->manterMaterial($descricao, $patrimonio, $categoria, $tipomaterial, $idGrupoMaterial, $nome_imagem, $siape);
     
     if($manter){
@@ -126,7 +80,7 @@ if (!empty($_POST) or ! empty($_GET)) {
                             </div>
                             <div class="profile_info">
                                 <span>Bem vindo,</span>
-                                <h2><?= $nome ?></h2>
+                                <h2><?= e($nome) ?></h2>
                                 <h2></h2>
                             </div>
                         </div>
@@ -216,7 +170,8 @@ if (!empty($_POST) or ! empty($_GET)) {
                                     <div class="x_content">
                                         <br />
 
-                                        <form action="<?php echo $_SERVER['PHP_SELF'] ?>" id="ManterMaterial" name="ManterMaterial" method="POST"  enctype="multipart/form-data"  class="form-horizontal form-label-left">
+                                        <form action="<?= e($_SERVER['PHP_SELF']) ?>" id="ManterMaterial" name="ManterMaterial" method="POST"  enctype="multipart/form-data"  class="form-horizontal form-label-left">
+                                         <?php csrf_field(); ?>
 
                                             <div class="form-group">
                                                 <label class="control-label col-md-3 col-sm-3 col-xs-12" for="material">Materiais</label>
@@ -227,8 +182,8 @@ if (!empty($_POST) or ! empty($_GET)) {
                                                         WHILE ($material = $consulta->fetch(PDO::FETCH_ASSOC)):
                                                             ?>
 
-                                                            <option value="<?= $material['idGrupoMaterial'] ?>"><td><?= $material['DescricaoMat'] ?></td>
-                                                            &nbspPat:&nbsp<td><?= $material['NumPatrimonio'] ?></td>
+                                                            <option value="<?= e($material['idGrupoMaterial']) ?>"><td><?= e($material['DescricaoMat']) ?></td>
+                                                            &nbspPat:&nbsp<td><?= e($material['NumPatrimonio']) ?></td>
 
                                                             </option>
 

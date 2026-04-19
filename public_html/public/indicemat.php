@@ -1,72 +1,26 @@
 <?php
-session_start();
-require("../app/pdo.php");
-
-$_pdo = new connectDB();
-$_pdo->conectar();
+require __DIR__ . '/../app/bootstrap.php';
+requireLogin(1);
 
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
 $nome  = $_SESSION['nome'];
 $siape = $_SESSION['siape'];
-
-if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == true))
-{
-	unset($_SESSION['siape']);
-	unset($_SESSION['senha']);
-	
-	echo"<script language='javascript' type='text/javascript'>alert('Gentileza efetue login no Sistema');</script>";
-	
-	header('location:login.php');
-}
-	 
-if($_SESSION['permissao'] != 1){
-        echo"<script language='javascript' type='text/javascript'>alert('Usuário sem permissão para acessar a funcionalidade!');window.location.href='index.php';</script>";
-}
    
-if(!empty($_POST) or !empty($_GET)){
+if(!empty($_POST)){
+csrf_validate();
 
-$quantidade      = $_POST['quantidade'];
-$idGrupoMaterial = $_POST['material'];
-$localizacao     = $_POST['localizacao'];
-$foto            = $_FILES["foto"];
-$error;
+$quantidade      = req_int('quantidade', 0, 'POST');
+$idGrupoMaterial = req_str('material', '', 'POST', 50);
+$localizacao     = req_id('localizacao', 'POST');
 
-// Se a foto estiver sido selecionada
-if (!empty($foto["name"])) {
+$uploadErr = null;
+$nome_imagem = upload_image('foto', __DIR__ . '/fotos', $uploadErr);
+if ($uploadErr !== null) {
+    echo "<script>alert('" . e($uploadErr) . "');window.location.href='indicemat.php';</script>";
+    exit;
+}
 
-       // Largura máxima em pixels
-       $largura = 150;
-       // Altura máxima em pixels
-       $altura = 180;
-       // Tamanho máximo do arquivo em bytes
-       $tamanho = 1000;
-
-// Verifica se o arquivo é uma imagem
-if(!preg_match("/^image\/(pjpeg|jpeg|png|gif|bmp)$/", $foto["type"])){
-  $error[1] = "Isso não é uma imagem.";
-       } 
-
-       // Pega as dimensões da imagem
-       $dimensoes = getimagesize($foto["tmp_name"]);
-
-       // Se não houver nenhum erro
-       if (count($error) == 0) {
-
-               // Pega extensão da imagem
-               preg_match("/\.(gif|bmp|png|jpg|jpeg){1}$/i", $foto["name"], $ext);
-
-       // Gera um nome único para a imagem
-       $nome_imagem = md5(uniqid(time())) . "." . $ext[1];
-
-       // Caminho de onde ficará a imagem
-        $caminho_imagem = "fotos/" . $nome_imagem;
-
-               // Faz o upload da imagem para seu respectivo caminho
-               move_uploaded_file($foto["tmp_name"], $caminho_imagem);
-
-   }    
-}		
 if($quantidade <= 0){
 	echo"<script language='javascript' type='text/javascript'>alert('Valor inválido para Quantidade');window.location.href='indicemat.php';</script>";
 	die();
@@ -130,7 +84,7 @@ $cadastrar = $_pdo->insereItensMaterial($quantidade,$localizacao,$nome_imagem,$s
               </div>
               <div class="profile_info">
                 <span>Bem vindo,</span>
-				<h2><?=$nome?></h2>
+				<h2><?= e($nome) ?></h2>
                 <h2></h2>
               </div>
             </div>
@@ -220,7 +174,8 @@ $cadastrar = $_pdo->insereItensMaterial($quantidade,$localizacao,$nome_imagem,$s
                   <div class="x_content">
                     <br />
                    
-				   <form action="<?php echo $_SERVER['PHP_SELF'] ?>" id="indicemat" name="indicemat" method="POST"  enctype="multipart/form-data"  class="form-horizontal form-label-left">
+				   <form action="<?= e($_SERVER['PHP_SELF']) ?>" id="indicemat" name="indicemat" method="POST"  enctype="multipart/form-data"  class="form-horizontal form-label-left">
+					<?php csrf_field(); ?>
 					 
 					 <div class="form-group">
                       <label class="control-label col-md-3 col-sm-3 col-xs-12" for="material">Materiais</label>
@@ -233,7 +188,7 @@ $cadastrar = $_pdo->insereItensMaterial($quantidade,$localizacao,$nome_imagem,$s
 					  
 					      ?>
 					         
-							 <option value="<?=$material['idGrupoMaterial']?>"><td><?=$material['DescricaoMat']?></td>
+							 <option value="<?= e($material['idGrupoMaterial']) ?>"><td><?= e($material['DescricaoMat']) ?></td>
 							                                      
 							 </option>
 							 
@@ -257,7 +212,7 @@ $cadastrar = $_pdo->insereItensMaterial($quantidade,$localizacao,$nome_imagem,$s
 					  
 					      ?>
 						  
-                            <option value="<?=$localizacao['idLocalizacao']?>"><?=$localizacao['Localizacao']?></option>
+                            <option value="<?= e($localizacao['idLocalizacao']) ?>"><?= e($localizacao['Localizacao']) ?></option>
                       
 						  <?php
 						    ENDWHILE

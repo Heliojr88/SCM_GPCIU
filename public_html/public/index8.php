@@ -1,28 +1,9 @@
 <?php
 ini_set('default_charset','UTF-8');
-session_start();
-
-require("../app/pdo.php");
-
-$_pdo = new connectDB();
-$_pdo->conectar();
+require __DIR__ . '/../app/bootstrap.php';
+requireLogin();
 
 $nome = $_SESSION['nome'];
-
-if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == true))
-{
-	unset($_SESSION['siape']);
-	unset($_SESSION['senha']);
-	
-	echo"<script language='javascript' type='text/javascript'>alert('Gentileza efetue login no Sistema');</script>";
-	
-	header('location:login.php');
-}
-
-//$logado = $_SESSION['login'];
-
-
-
 ?>
 
 
@@ -71,7 +52,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
               </div>
               <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$nome;?></h2>
+                <h2><?= e($nome) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -187,14 +168,14 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
 					  ?>
 					  
                         <tr>
-                          <td data-order="<?= strtotime($material['dataBaixa']) ?>"><?=$material['dataBaixa']?></td>
-                          <td><?=$material['DescricaoMat']?></td>
-						  <td><?=$material['qtdBaixa']?></td>
-						  <td><?=$material['NumPatrimonio']?></td>
-                          <td><?=$material['motivoBaixa']?></td>
-                          <td><?=$material['memorandoBaixa']?></td>
-						  <td><?=$material['SituacaoMat']?></td>
-                          <td><?=$material['NomeUsuario']?></td>
+                          <td data-order="<?= strtotime($material['dataBaixa']) ?>"><?= e($material['dataBaixa']) ?></td>
+                          <td><?= e($material['DescricaoMat']) ?></td>
+						  <td><?= e($material['qtdBaixa']) ?></td>
+						  <td><?= e($material['NumPatrimonio']) ?></td>
+                          <td><?= e($material['motivoBaixa']) ?></td>
+                          <td><?= e($material['memorandoBaixa']) ?></td>
+						  <td><?= e($material['SituacaoMat']) ?></td>
+                          <td><?= e($material['NomeUsuario']) ?></td>
 						  
                         </tr>
 						

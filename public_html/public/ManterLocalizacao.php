@@ -1,33 +1,16 @@
 <?php
-session_start();
+require __DIR__ . '/../app/bootstrap.php';
+requireLogin(1);
+
 $UsuarioLogado = $_SESSION['nome'];
-require("../app/pdo.php");
-
-if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == true))
-{
-	unset($_SESSION['siape']);
-	unset($_SESSION['senha']);
-	
-	echo"<script language='javascript' type='text/javascript'>alert('Gentileza efetue login no Sistema');</script>";
-	
-	header('location:login.php');	
-}
-
-$_pdo = new connectDB();
-$_pdo->conectar();
-
 $nome = $_SESSION['nome'];
-
-//permissão de administrador
-if($_SESSION['permissao'] != 1){
-    echo"<script language='javascript' type='text/javascript'>alert('Usuário sem permissão para acessar a funcionalidade!');window.location.href='index.php';</script>";
-}
    
 if(!empty($_POST)){
-	  		 
-$novalocalizacao = $_POST['novalocalizacao'];
-$idLocalizacao   = $_POST['localizacao'];
-$ativo           = $_POST['ativa'];
+	csrf_validate();
+
+$novalocalizacao = req_str('novalocalizacao', '', 'POST', 200);
+$idLocalizacao   = req_id('localizacao', 'POST');
+$ativo           = req_int('ativa', 0, 'POST');
 
 $manterLocalizacao = $_pdo->manterLocalizacao($novalocalizacao,$idLocalizacao,$ativo); 		
 
@@ -91,7 +74,7 @@ else{
               </div>
                <div class="profile_info">
                 <span>Bem Vindo,</span>
-                <h2><?=$UsuarioLogado;?></h2>
+                <h2><?= e($UsuarioLogado) ?></h2>
               </div>
             </div>
             <!-- /menu profile quick info -->
@@ -181,6 +164,7 @@ else{
                     <br />
                    
 		<form action="ManterLocalizacao.php" id="ManterLocalizacao" name="ManterLocalizacao" method="POST" class="form-horizontal form-label-left">
+		 <?php csrf_field(); ?>
 
                     <div class="form-group">
                         <label class="control-label col-md-3 col-sm-3 col-xs-12" for="localizacao">Localização</label>
@@ -193,7 +177,7 @@ else{
 					  
 					      ?>
 						  
-                            <option value="<?=$localizacao['idLocalizacao']?>"><?=$localizacao['Localizacao']?></option>
+                            <option value="<?= e($localizacao['idLocalizacao']) ?>"><?= e($localizacao['Localizacao']) ?></option>
                       
                             <?php
                               ENDWHILE

@@ -1,37 +1,47 @@
 <?php
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
-session_start();
+require __DIR__ . '/../app/bootstrap.php';
 
-//acesso ao PDO
-require("../app/pdo.php");
+if(!empty($_POST)){
+  csrf_validate();
 
-$_pdo = new connectDB();
-$_pdo->conectar();
+$nome   = req_str('nome',  '', 'POST', 150);
+$cpf    = preg_replace('/\D+/', '', req_str('cpf',   '', 'POST', 20));
+$email  = req_str('email', '', 'POST', 150);
+$siape  = preg_replace('/\D+/', '', req_str('siape', '', 'POST', 20));
+$senha  = (string) ($_POST['senha']  ?? '');
+$senha2 = (string) ($_POST['senha2'] ?? '');
 
-if(!empty($_POST) or !empty($_GET)){
-  
-$nome   = $_POST['nome'];	 	
-$cpf    = $_POST['cpf'];
-$email  = $_POST['email'];
-$siape  = $_POST['siape'];
-$senha  = $_POST['senha'];
-$senha2 = $_POST['senha2'];
+//verifica o Nome
+if(strlen($nome) < 5){
+    echo"<script language='javascript' type='text/javascript'>alert('Nome incompleto, tente novamente!');window.location.href='form.php';</script>";
+    exit;
+}
 
 //verifica o CPF
 if(strlen($cpf) < 11){
     echo"<script language='javascript' type='text/javascript'>alert('CPF Inválido, tente novamente!');window.location.href='form.php';</script>";
+    exit;
 }
 
-//verifica o SIAPE 
+//verifica o SIAPE
 if(strlen($siape) < 7){
     echo"<script language='javascript' type='text/javascript'>alert('SIAPE Inválido, tente novamente!');window.location.href='form.php';</script>";
+    exit;
 }
 
-//verifica o Nome 
-if(strlen($nome) < 5){
-    echo"<script language='javascript' type='text/javascript'>alert('Nome incompleto, tente novamente!');window.location.href='form.php';</script>";
+//verifica o email
+if($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)){
+    echo"<script language='javascript' type='text/javascript'>alert('Email inválido, tente novamente!');window.location.href='form.php';</script>";
+    exit;
 }
-    
+
+//verifica a senha
+if(strlen($senha) < 6 || $senha !== $senha2){
+    echo"<script language='javascript' type='text/javascript'>alert('Senha inválida ou não confere com a confirmação.');window.location.href='form.php';</script>";
+    exit;
+}
+
 $cadastrar = $_pdo->insereUsuario($nome,$cpf,$email,$siape,$senha,$senha2);
 
 if($cadastrar){
@@ -208,6 +218,7 @@ if($cadastrar){
                     <br />
                    
 				   <form id="cadastro" method="POST" class="form-horizontal form-label-left">
+					<?php csrf_field(); ?>
 
                       <div class="form-group">
                         <label class="control-label col-md-3 col-sm-3 col-xs-12" for="nome">Nome Completo<span class="required">*</span>
