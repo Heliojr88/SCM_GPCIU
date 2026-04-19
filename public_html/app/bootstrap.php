@@ -3,10 +3,12 @@
  * Bootstrap central do SCM_GPCIU.
  *
  * Responsabilidades:
+ *   - Carregar helpers puros (app/helpers.php) e o adaptador PDO
  *   - Configurar sessão com cookies seguros (HttpOnly, SameSite)
- *   - Abrir sessão e conexão PDO
- *   - Expor helpers de autenticação (requireLogin, requirePermissao)
- *   - Expor helper de escape de saída e()
+ *   - Instalar handlers de erro/exceção
+ *   - Emitir headers de segurança
+ *   - Abrir conexão PDO global
+ *   - Expor helpers de autenticação, CSRF e audit_log (com DB)
  *
  * Todo arquivo público deve começar com:
  *     require __DIR__ . '/../app/bootstrap.php';
@@ -16,6 +18,7 @@
  * apenas bootstrap sem requireLogin().
  */
 
+require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/pdo.php';
 
 // Ambiente (production|development). Controla exibição de erros detalhados.
@@ -31,32 +34,6 @@ if (SCM_ENV === 'production') {
     ini_set('display_errors', '1');
 }
 error_reporting(E_ALL);
-
-/**
- * Escreve uma entrada JSON de log em storage/logs/app.log.
- * Ignora falhas de IO para evitar cascata de erros em runtime.
- */
-function scm_log(string $level, string $message, array $context = []): void
-{
-    $dir = __DIR__ . '/../storage/logs';
-    if (!is_dir($dir)) {
-        @mkdir($dir, 0700, true);
-    }
-    $entry = [
-        'ts'      => date('c'),
-        'level'   => $level,
-        'message' => $message,
-        'context' => $context,
-        'ip'      => $_SERVER['REMOTE_ADDR'] ?? null,
-        'user'    => $_SESSION['siape']      ?? null,
-        'uri'     => $_SERVER['REQUEST_URI'] ?? null,
-    ];
-    @file_put_contents(
-        $dir . '/app.log',
-        json_encode($entry, JSON_UNESCAPED_UNICODE) . PHP_EOL,
-        FILE_APPEND | LOCK_EX
-    );
-}
 
 /**
  * Handler global de exceções não tratadas. Em produção mostra mensagem
@@ -129,15 +106,6 @@ if (!isset($GLOBALS['_pdo'])) {
     $GLOBALS['_pdo'] = $_pdo;
 }
 
-/** Escapa texto para saída HTML segura. */
-function e($value): string
-{
-    if ($value === null) {
-        return '';
-    }
-    return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-}
-
 /** Usuário atual ou null se não autenticado. */
 function currentUser(): ?array
 {
@@ -202,183 +170,6 @@ function csrf_validate(): void
         http_response_code(403);
         exit('Token CSRF inválido. Recarregue a página e tente novamente.');
     }
-}
-
-/**
- * Lê um inteiro de $_REQUEST/$_POST/$_GET com validação. Retorna $default se
- * ausente ou inválido. Use $source para restringir a origem: 'POST' ou 'GET'.
- */
-function req_int(string $key, ?int $default = null, string $source = 'REQUEST'): ?int
-{
-    $src = req_source($source);
-    if (!isset($src[$key])) {
-        return $default;
-    }
-    $v = filter_var($src[$key], FILTER_VALIDATE_INT);
-    return $v === false ? $default : $v;
-}
-
-/**
- * Lê um id positivo (>0). Retorna null se ausente, inválido ou não positivo.
- */
-function req_id(string $key, string $source = 'REQUEST'): ?int
-{
-    $v = req_int($key, null, $source);
-    return ($v !== null && $v > 0) ? $v : null;
-}
-
-/**
- * Lê uma string com trim e limite de comprimento. Retorna $default se ausente
- * ou não escalar. $maxLen = 0 desativa o corte.
- */
-function req_str(string $key, string $default = '', string $source = 'REQUEST', int $maxLen = 500): string
-{
-    $src = req_source($source);
-    if (!isset($src[$key]) || !is_scalar($src[$key])) {
-        return $default;
-    }
-    $s = trim((string) $src[$key]);
-    if ($maxLen > 0 && strlen($s) > $maxLen) {
-        $s = substr($s, 0, $maxLen);
-    }
-    return $s;
-}
-
-/** Resolve a superglobal correspondente ao nome lógico. */
-function req_source(string $source): array
-{
-    switch (strtoupper($source)) {
-        case 'POST':    return $_POST;
-        case 'GET':     return $_GET;
-        case 'REQUEST': return $_REQUEST;
-    }
-    return $_REQUEST;
-}
-
-/** Retorna o IP do cliente, respeitando proxy reverso se configurado. */
-function client_ip(): string
-{
-    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-    return filter_var($ip, FILTER_VALIDATE_IP) ?: '0.0.0.0';
-}
-
-/** Caminho do arquivo JSON que guarda o contador do rate limit. */
-function rate_limit_file(string $key): string
-{
-    $dir = __DIR__ . '/../storage/ratelimit';
-    if (!is_dir($dir)) {
-        @mkdir($dir, 0700, true);
-    }
-    return $dir . '/' . sha1($key) . '.json';
-}
-
-/**
- * Incrementa o contador do rate limit para $key e retorna true se o limite foi
- * atingido dentro da janela $windowSeconds.
- */
-function rate_limit_hit(string $key, int $maxAttempts, int $windowSeconds): bool
-{
-    $file = rate_limit_file($key);
-    $now = time();
-    $data = ['count' => 0, 'first' => $now];
-
-    if (is_file($file)) {
-        $raw = @file_get_contents($file);
-        $decoded = $raw !== false ? json_decode($raw, true) : null;
-        if (is_array($decoded) && isset($decoded['first'], $decoded['count'])) {
-            $data = $decoded;
-        }
-    }
-
-    if ($now - (int) $data['first'] > $windowSeconds) {
-        $data = ['count' => 0, 'first' => $now];
-    }
-
-    $data['count'] = (int) $data['count'] + 1;
-    @file_put_contents($file, json_encode($data), LOCK_EX);
-
-    return $data['count'] > $maxAttempts;
-}
-
-/** Zera o contador de rate limit (ex.: após login bem-sucedido). */
-function rate_limit_reset(string $key): void
-{
-    $file = rate_limit_file($key);
-    if (is_file($file)) {
-        @unlink($file);
-    }
-}
-
-/**
- * Recebe um upload de imagem e grava em $destDir com nome aleatório.
- *
- * Validações:
- *  - Erro do PHP (UPLOAD_ERR_OK)
- *  - is_uploaded_file (mitiga bypass de $_FILES forjado)
- *  - Tamanho máximo em bytes (default 2 MiB)
- *  - MIME real via finfo (não confia em $_FILES['type'])
- *  - Extensão derivada do MIME (não do nome do arquivo enviado)
- *
- * Retorna o nome do arquivo gerado em caso de sucesso, ou null se:
- *  - Nenhum arquivo enviado
- *  - Validação falhou (mensagem em $errorOut)
- */
-function upload_image(string $fieldName, string $destDir, ?string &$errorOut = null, int $maxBytes = 2097152): ?string
-{
-    $errorOut = null;
-
-    if (!isset($_FILES[$fieldName]) || !is_array($_FILES[$fieldName])) {
-        return null;
-    }
-    $file = $_FILES[$fieldName];
-
-    if (!isset($file['error']) || $file['error'] === UPLOAD_ERR_NO_FILE) {
-        return null;
-    }
-    if ($file['error'] !== UPLOAD_ERR_OK) {
-        $errorOut = 'Falha no upload do arquivo (codigo ' . (int) $file['error'] . ').';
-        return null;
-    }
-    if (!is_uploaded_file($file['tmp_name'])) {
-        $errorOut = 'Arquivo de upload invalido.';
-        return null;
-    }
-    if (($file['size'] ?? 0) > $maxBytes) {
-        $errorOut = 'Arquivo excede o tamanho maximo permitido.';
-        return null;
-    }
-
-    $allowed = [
-        'image/jpeg' => 'jpg',
-        'image/pjpeg' => 'jpg',
-        'image/png'  => 'png',
-        'image/gif'  => 'gif',
-    ];
-
-    $finfo = new finfo(FILEINFO_MIME_TYPE);
-    $mime = $finfo->file($file['tmp_name']);
-    if (!isset($allowed[$mime])) {
-        $errorOut = 'Tipo de arquivo nao permitido.';
-        return null;
-    }
-
-    if (!is_dir($destDir)) {
-        if (!@mkdir($destDir, 0755, true) && !is_dir($destDir)) {
-            $errorOut = 'Diretorio de destino indisponivel.';
-            return null;
-        }
-    }
-
-    $filename = bin2hex(random_bytes(16)) . '.' . $allowed[$mime];
-    $dest     = rtrim($destDir, '/\\') . '/' . $filename;
-
-    if (!move_uploaded_file($file['tmp_name'], $dest)) {
-        $errorOut = 'Falha ao mover o arquivo para o destino.';
-        return null;
-    }
-
-    @chmod($dest, 0644);
-    return $filename;
 }
 
 /**

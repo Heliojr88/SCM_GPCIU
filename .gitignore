@@ -28,3 +28,9 @@ Thumbs.db
 # Arquivos temporários de desenvolvimento
 public_html/app/new 1.txt
 public_html/app/teste.txt
+
+# Dependencias / build
+/vendor/
+/composer.lock
+.phpunit.result.cache
+/coverage/

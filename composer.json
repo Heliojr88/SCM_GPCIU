@@ -1,0 +1,26 @@
+{
+    "name": "gpciu/scm",
+    "description": "Sistema de Controle de Material - GPCIU",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=7.4"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.6",
+        "phpstan/phpstan": "^1.10"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "GpciuTests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "stan": "phpstan analyse"
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true
+    }
+}
