@@ -14,13 +14,14 @@ if(!empty($_POST) or !empty($_GET)){
 		header("Location:../login.php");	
 	}
 
-	$siape = $_POST['siape'];
-	$entrar = $_POST['login'];
-	$senha = md5($_POST['senha']);
+		$siape = $_POST['siape'];
+		$entrar = $_POST['login'];
+		// ALTERADO: Senha não é mais transformada em MD5 nesta camada.
+		$senha = $_POST['senha'];
 
-	if (isset($entrar)) {
-		$consulta = $_pdo->login($siape, $senha);
-		$verifica = $consulta->fetch(PDO::FETCH_ASSOC);
+		if (isset($entrar)) {
+			// ALTERADO: Login usa retorno direto da camada de dados com verificação segura.
+			$verifica = $_pdo->login($siape, $senha);
                 //echo $verifica;
 				
 		if (!$verifica){
@@ -39,14 +40,15 @@ if(!empty($_POST) or !empty($_GET)){
 			//print_r ($verifica);
 			//print_r($res);					
 			
-			$_SESSION['nome'] = $res[0];
-			$_SESSION['idUsuario'] = $res[1];
-			$_SESSION['senha'] = $senha;
+				$_SESSION['nome'] = $res[0];
+				$_SESSION['idUsuario'] = $res[1];
+				// ALTERADO: Mantém apenas flag de sessão autenticada, sem guardar hash/senha.
+				$_SESSION['senha'] = true;
 			$_SESSION['siape'] = $siape;
 			$_SESSION['permissao'] = $res[2];
 								
-			setcookie("login",$login);
-			header("Location:index6.php");					
+				// ALTERADO: Removido uso de variável indefinida no cookie de login.
+				header("Location:index6.php");					
 
 		}
 	}
@@ -173,4 +175,3 @@ if(!empty($_POST) or !empty($_GET)){
     </div>
   </body>
 </html>
-

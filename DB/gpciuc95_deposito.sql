@@ -15549,7 +15549,8 @@ CREATE TABLE `usuarios` (
   `Siape` int(11) NOT NULL,
   `CPF` varchar(20) DEFAULT NULL,
   `NomeUsuario` varchar(45) DEFAULT NULL,
-  `Senha` varchar(32) DEFAULT NULL,
+  -- ALTERADO: Tamanho do campo de senha ampliado para suportar hashes modernos.
+  `Senha` varchar(255) DEFAULT NULL,
   `Permissao_idPermissao` int(11) NOT NULL,
   `email` varchar(50) DEFAULT NULL,
   `ativo` int(11) NOT NULL DEFAULT '0',
