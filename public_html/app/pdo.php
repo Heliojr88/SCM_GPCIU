@@ -1,4 +1,6 @@
 <?php
+// ALTERADO: Inclui configuração centralizada do banco.
+require_once(__DIR__ . "/config.php");
 class connectDB{
 
 protected static $con;
@@ -7,10 +9,18 @@ protected static $con;
 function conectar(){
 
 
-$host = "localhost";
-$banco = "gpciuc95_deposito";
-$usuarioBanco = "gpciuc95_db";
-$senhaBanco = "dbadmin123";
+// ALTERADO: Substitui credenciais fixas por configuração via função scmConfig().
+$config = scmConfig();
+$host = $config['db_host'];
+$banco = $config['db_name'];
+$usuarioBanco = $config['db_user'];
+$senhaBanco = $config['db_pass'];
+
+// ALTERADO: Falha explícita quando variáveis de ambiente obrigatórias não estão definidas.
+if (empty($host) || empty($banco) || empty($usuarioBanco) || $senhaBanco === null) {
+    echo "Configuração de banco incompleta. Defina SCM_DB_HOST, SCM_DB_NAME, SCM_DB_USER e SCM_DB_PASS.";
+    return false;
+}
 
     try{
         $opcoes = array(
@@ -637,19 +647,53 @@ function getUsuarios() {
   }
 
 function login($siape, $senha){
-    $sql = "SELECT * FROM usuarios WHERE siape = '$siape'
-                                           AND senha = '$senha'";
+    // ALTERADO: Login agora usa query parametrizada e migração automática de hash legado MD5.
+    $sql = "SELECT * FROM usuarios WHERE siape = :siape LIMIT 1";
     $resultado = self::$con->prepare($sql)  OR trigger_error($con->error, E_USER_ERROR);
+    $resultado->bindValue(':siape', $siape, PDO::PARAM_INT);
     $resultado->execute();
+    $usuario = $resultado->fetch(PDO::FETCH_ASSOC);
 
-    return $resultado;
+    if(!$usuario){
+        return false;
+    }
+
+    $hashArmazenado = $usuario['Senha'];
+    $senhaValida = false;
+
+    if (password_get_info($hashArmazenado)['algo'] !== 0) {
+        $senhaValida = password_verify($senha, $hashArmazenado);
+    } else {
+        $senhaValida = (md5($senha) === $hashArmazenado);
+        if ($senhaValida) {
+            $novoHash = password_hash($senha, PASSWORD_DEFAULT);
+            $atualiza = self::$con->prepare("UPDATE usuarios SET Senha = :senha WHERE idUsuario = :idUsuario");
+            $atualiza->bindValue(':senha', $novoHash, PDO::PARAM_STR);
+            $atualiza->bindValue(':idUsuario', $usuario['idUsuario'], PDO::PARAM_INT);
+            $atualiza->execute();
+            $usuario['Senha'] = $novoHash;
+        }
+    }
+
+    if(!$senhaValida){
+        return false;
+    }
+
+    return $usuario;
   }
 
 function insereAlteracao($descricao,$idMaterial,$siape,$idLocalizacao,$quantidade,$memorandoSei){
 
+    // ALTERADO: Inserção de alteração agora usa bind de parâmetros para reduzir risco de SQL injection.
     $sql = "INSERT INTO alteracao(Descricao,idMaterial,Siape,idLocalizacao,QuantidadeAlt,memorandoSei)
-                                    VALUES('$descricao',$idMaterial,$siape,$idLocalizacao,$quantidade,$memorandoSei)";
+                                    VALUES(:descricao,:idMaterial,:siape,:idLocalizacao,:quantidade,:memorandoSei)";
         $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
+        $resultado->bindValue(':descricao', $descricao, PDO::PARAM_STR);
+        $resultado->bindValue(':idMaterial', $idMaterial, PDO::PARAM_INT);
+        $resultado->bindValue(':siape', $siape, PDO::PARAM_INT);
+        $resultado->bindValue(':idLocalizacao', $idLocalizacao, PDO::PARAM_INT);
+        $resultado->bindValue(':quantidade', $quantidade, PDO::PARAM_INT);
+        $resultado->bindValue(':memorandoSei', $memorandoSei, PDO::PARAM_INT);
         $resultado->execute();
 
         if ($resultado) {
@@ -689,9 +733,19 @@ function insereAlteracao($descricao,$idMaterial,$siape,$idLocalizacao,$quantidad
 //função para inserir novos materias
 function insereMaterial($descricao,$quantidade,$patrimonio,$categoria,$localizacao,$tipomaterial,$nome_imagem,$siape,$idSubLocalizacao){
 
+                // ALTERADO: Sanitiza tipos primitivos usados em queries deste método.
+                $quantidade = (int)$quantidade;
+                $categoria = (int)$categoria;
+                $localizacao = (int)$localizacao;
+                $tipomaterial = (int)$tipomaterial;
+                $siape = (int)$siape;
+                $idSubLocalizacao = (int)$idSubLocalizacao;
+
                 if($patrimonio != ''){
-                    $sql = "SELECT * FROM material WHERE NumPatrimonio = '$patrimonio'";
+                    // ALTERADO: Verificação de patrimônio com query parametrizada.
+                    $sql = "SELECT * FROM material WHERE NumPatrimonio = :patrimonio";
                     $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
+                    $resultado->bindValue(':patrimonio', $patrimonio, PDO::PARAM_STR);
                     $resultado->execute();
                     $nResultado = $resultado->fetchColumn();
 
@@ -700,8 +754,10 @@ function insereMaterial($descricao,$quantidade,$patrimonio,$categoria,$localizac
                     }
                 }
                 else{
-                    $sql = "SELECT * FROM material WHERE descricaoMat = '$descricao'";
+                    // ALTERADO: Verificação de descrição com query parametrizada.
+                    $sql = "SELECT * FROM material WHERE descricaoMat = :descricao";
                     $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
+                    $resultado->bindValue(':descricao', $descricao, PDO::PARAM_STR);
                     $resultado->execute();
                     $nResultado = $resultado->fetchColumn();
 
@@ -722,29 +778,53 @@ function insereMaterial($descricao,$quantidade,$patrimonio,$categoria,$localizac
                         a validação a seguir foi inserida para tratar isso, não inserindo valor para NumPatrimonio
                         quando o valor inserido no formuário HTML for uma string vazia*/
                         if($patrimonio == ''){
+                              // ALTERADO: INSERT principal sem patrimônio parametrizado.
                               $sql = "INSERT into material (categoria_idcategoria, descricaoMat, Localizacao_idLocalizacao, Quantidade,Situacaomat_idSituacao,Usuarios_Siape, TipoMaterial_idTipoMaterial,fotoMaterial,sublocalizacao_idSubLocalizacao)
-                              VALUES($categoria,'$descricao',$localizacao,1,1,$siape,$tipomaterial,'$nome_imagem','$idSubLocalizacao')";
+                              VALUES(:categoria,:descricao,:localizacao,1,1,:siape,:tipomaterial,:nome_imagem,:idSubLocalizacao)";
                         }else{
+                              // ALTERADO: INSERT principal com patrimônio parametrizado.
                               $sql = "INSERT into material (categoria_idcategoria, descricaoMat, Localizacao_idLocalizacao, NumPatrimonio, Quantidade,Situacaomat_idSituacao,Usuarios_Siape, TipoMaterial_idTipoMaterial,fotoMaterial,sublocalizacao_idSubLocalizacao)
-                              VALUES($categoria,'$descricao',$localizacao,'$patrimonio',1,1,$siape,$tipomaterial,'$nome_imagem','$idSubLocalizacao')";
+                              VALUES(:categoria,:descricao,:localizacao,:patrimonio,1,1,:siape,:tipomaterial,:nome_imagem,:idSubLocalizacao)";
                         }
 
 
       $exec = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
+      $exec->bindValue(':categoria', $categoria, PDO::PARAM_INT);
+      $exec->bindValue(':descricao', $descricao, PDO::PARAM_STR);
+      $exec->bindValue(':localizacao', $localizacao, PDO::PARAM_INT);
+      if($patrimonio != ''){
+          $exec->bindValue(':patrimonio', $patrimonio, PDO::PARAM_STR);
+      }
+      $exec->bindValue(':siape', $siape, PDO::PARAM_INT);
+      $exec->bindValue(':tipomaterial', $tipomaterial, PDO::PARAM_INT);
+      $exec->bindValue(':nome_imagem', $nome_imagem, PDO::PARAM_STR);
+      $exec->bindValue(':idSubLocalizacao', $idSubLocalizacao, PDO::PARAM_INT);
       $exec->execute();
       $ultimoid = self::$con->lastInsertId();
-      $sql1 = "update material set idGrupoMaterial = $ultimoid where idMaterial = $ultimoid";
+      // ALTERADO: UPDATE do grupo com parâmetros bindados.
+      $sql1 = "update material set idGrupoMaterial = :ultimoid where idMaterial = :ultimoid";
       $exec = self::$con->prepare($sql1) OR trigger_error($con->error, E_USER_ERROR);
+      $exec->bindValue(':ultimoid', $ultimoid, PDO::PARAM_INT);
       $exec->execute();
 
       $quantidade--;
 
       for($i=0;$i<$quantidade;$i++){
 
+        // ALTERADO: INSERT dos itens adicionais parametrizado e com variável corrigida de sublocalização.
         $sql2 = "INSERT into material (idGrupoMaterial, categoria_idcategoria, descricaoMat, Localizacao_idLocalizacao, NumPatrimonio, Quantidade,Situacaomat_idSituacao,Usuarios_Siape, TipoMaterial_idTipoMaterial,fotoMaterial,sublocalizacao_idSubLocalizacao)
-          VALUES('$ultimoid','$categoria','$descricao',$localizacao,'$patrimonio',1,1,$siape,$tipomaterial,'$nome_imagem','$idSublocalizacao')";
+          VALUES(:ultimoid,:categoria,:descricao,:localizacao,:patrimonio,1,1,:siape,:tipomaterial,:nome_imagem,:idSubLocalizacao)";
 
         $exec = self::$con->prepare($sql2) OR trigger_error($con->error, E_USER_ERROR);
+        $exec->bindValue(':ultimoid', $ultimoid, PDO::PARAM_INT);
+        $exec->bindValue(':categoria', $categoria, PDO::PARAM_INT);
+        $exec->bindValue(':descricao', $descricao, PDO::PARAM_STR);
+        $exec->bindValue(':localizacao', $localizacao, PDO::PARAM_INT);
+        $exec->bindValue(':patrimonio', $patrimonio, PDO::PARAM_STR);
+        $exec->bindValue(':siape', $siape, PDO::PARAM_INT);
+        $exec->bindValue(':tipomaterial', $tipomaterial, PDO::PARAM_INT);
+        $exec->bindValue(':nome_imagem', $nome_imagem, PDO::PARAM_STR);
+        $exec->bindValue(':idSubLocalizacao', $idSubLocalizacao, PDO::PARAM_INT);
         $exec->execute();
 
       }
@@ -759,42 +839,38 @@ function insereMaterial($descricao,$quantidade,$patrimonio,$categoria,$localizac
 //função para inserir novos itens a um material
 function insereItensMaterial($quantidade,$localizacao,$nome_imagem,$siape,$idGrupoMaterial){
 
-//recupera a categoria do material
-$sql = "select categoria_idcategoria
-        from material m where m.idGrupoMaterial = $idGrupoMaterial limit 1";
-$resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-$resultado->execute();
-$result = $resultado->fetch(PDO::FETCH_ASSOC);
-$categoria = $result['categoria_idcategoria'];
+// ALTERADO: Sanitiza inteiros e usa select único parametrizado para reduzir interpolação SQL.
+$quantidade = (int)$quantidade;
+$localizacao = (int)$localizacao;
+$siape = (int)$siape;
+$idGrupoMaterial = (int)$idGrupoMaterial;
 
-//recupera o tipo do material
-$sql = "select  TipoMaterial_idTipoMaterial
-        from material m where m.idGrupoMaterial = $idGrupoMaterial limit 1";
+//recupera atributos do material em uma única consulta
+$sql = "select categoria_idcategoria, TipoMaterial_idTipoMaterial, descricaoMat, NumPatrimonio
+        from material m where m.idGrupoMaterial = :idGrupoMaterial limit 1";
 $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
+$resultado->bindValue(':idGrupoMaterial', $idGrupoMaterial, PDO::PARAM_INT);
 $resultado->execute();
 $result = $resultado->fetch(PDO::FETCH_ASSOC);
-$tipomaterial = $result['TipoMaterial_idTipoMaterial'];
-
-//recupera a descrição do material
-$sql = "select descricaoMat from material m where m.idGrupoMaterial = $idGrupoMaterial limit 1";
-$resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-$resultado->execute();
-$result = $resultado->fetch(PDO::FETCH_ASSOC);
+$categoria = (int)$result['categoria_idcategoria'];
+$tipomaterial = (int)$result['TipoMaterial_idTipoMaterial'];
 $descricao = $result['descricaoMat'];
-
-//recupera o patrimônio do material
-$sql = "select NumPatrimonio from material m where m.idGrupoMaterial = $idGrupoMaterial limit 1";
-$resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
-$resultado->execute();
-$result = $resultado->fetch(PDO::FETCH_ASSOC);
 $patrimonio = $result['NumPatrimonio'];
 
 
 try{
+        // ALTERADO: INSERT parametrizado para novos itens do grupo.
         $sql = "INSERT into material (idGrupoMaterial,categoria_idcategoria, descricaoMat, Localizacao_idLocalizacao, Quantidade,Situacaomat_idSituacao,Usuarios_Siape, TipoMaterial_idTipoMaterial,fotoMaterial,sublocalizacao_idSubLocalizacao)
-                  VALUES($idGrupoMaterial,$categoria,'$descricao',$localizacao,1,1,$siape,$tipomaterial,'$nome_imagem',0)";
+                  VALUES(:idGrupoMaterial,:categoria,:descricao,:localizacao,1,1,:siape,:tipomaterial,:nome_imagem,0)";
 
         $exec = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
+        $exec->bindValue(':idGrupoMaterial', $idGrupoMaterial, PDO::PARAM_INT);
+        $exec->bindValue(':categoria', $categoria, PDO::PARAM_INT);
+        $exec->bindValue(':descricao', $descricao, PDO::PARAM_STR);
+        $exec->bindValue(':localizacao', $localizacao, PDO::PARAM_INT);
+        $exec->bindValue(':siape', $siape, PDO::PARAM_INT);
+        $exec->bindValue(':tipomaterial', $tipomaterial, PDO::PARAM_INT);
+        $exec->bindValue(':nome_imagem', $nome_imagem, PDO::PARAM_STR);
         $exec->execute();
 
         $quantidade--;
@@ -802,9 +878,16 @@ try{
     for($i=0;$i<$quantidade;$i++){
 
                 $sql2 = "INSERT into material (idGrupoMaterial,categoria_idcategoria, descricaoMat, Localizacao_idLocalizacao, Quantidade,Situacaomat_idSituacao,Usuarios_Siape, TipoMaterial_idTipoMaterial,fotoMaterial,sublocalizacao_idSubLocalizacao)
-                  VALUES($idGrupoMaterial,$categoria,'$descricao',$localizacao,1,1,$siape,$tipomaterial,'$nome_imagem',0)";
+                  VALUES(:idGrupoMaterial,:categoria,:descricao,:localizacao,1,1,:siape,:tipomaterial,:nome_imagem,0)";
 
                 $exec = self::$con->prepare($sql2) OR trigger_error($con->error, E_USER_ERROR);
+                $exec->bindValue(':idGrupoMaterial', $idGrupoMaterial, PDO::PARAM_INT);
+                $exec->bindValue(':categoria', $categoria, PDO::PARAM_INT);
+                $exec->bindValue(':descricao', $descricao, PDO::PARAM_STR);
+                $exec->bindValue(':localizacao', $localizacao, PDO::PARAM_INT);
+                $exec->bindValue(':siape', $siape, PDO::PARAM_INT);
+                $exec->bindValue(':tipomaterial', $tipomaterial, PDO::PARAM_INT);
+                $exec->bindValue(':nome_imagem', $nome_imagem, PDO::PARAM_STR);
                 $exec->execute();
 
         }
@@ -819,11 +902,13 @@ catch(Exception $e){
 //função para enviar email
 function enviaEmail($siape,$email_assunto,$mensagem){
 
+  // ALTERADO: Query do destinatário parametrizada.
   $sql = "SELECT email,nomeUsuario
       FROM usuarios
-      where siape = $siape";
+      where siape = :siape";
 
     $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
+    $resultado->bindValue(':siape', (int)$siape, PDO::PARAM_INT);
     $resultado->execute();
     $master = $resultado->fetch(PDO::FETCH_ASSOC);
 
@@ -874,12 +959,15 @@ function enviaEmail($siape,$email_assunto,$mensagem){
 
 //utilizada para ativar usuários (ativausuario.php)
 function ativaUsuario($ativar,$siapeUsuario){
-     $sql = "UPDATE usuarios SET ativo = $ativar
-                            WHERE siape = $siapeUsuario";
+     // ALTERADO: Atualização de status do usuário parametrizada com bind de parâmetros.
+     $sql = "UPDATE usuarios SET ativo = :ativar
+                            WHERE siape = :siapeUsuario";
 
                 try{
 
                     $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
+                    $resultado->bindValue(':ativar', $ativar, PDO::PARAM_INT);
+                    $resultado->bindValue(':siapeUsuario', $siapeUsuario, PDO::PARAM_INT);
                     $resultado->execute();
 
     return true;
@@ -894,20 +982,23 @@ function ativaUsuario($ativar,$siapeUsuario){
 //utilizada para recuperar senha
 function recuperaSenha($cpf,$email,$siape,$senha){
 
-    $sql = "select * from usuarios u where u.Siape = '$siape'
-                                     AND   u.CPF   = '$cpf'
-                                     AND   u.email = '$email'
+    // ALTERADO: Recuperação de senha com bind de parâmetros para evitar injeção SQL.
+    $sql = "select * from usuarios u where u.Siape = :siape
+                                     AND   u.CPF   = :cpf
+                                     AND   u.email = :email
                                      AND   u.ativo = 1";
 
     $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
+    $resultado->bindValue(':siape', $siape, PDO::PARAM_STR);
+    $resultado->bindValue(':cpf', $cpf, PDO::PARAM_STR);
+    $resultado->bindValue(':email', $email, PDO::PARAM_STR);
     $resultado->execute();
     $nResultado = $resultado->fetchColumn();
 
     if($nResultado > 0){
-      $senhaMD5 = MD5($senha);
-
-       $query2 = "UPDATE usuarios set Senha = '$senhaMD5'
-                  WHERE Siape = '$siape' AND CPF   = '$cpf'";
+       // ALTERADO: Atualiza senha com password_hash() no lugar de MD5.
+       $query2 = "UPDATE usuarios set Senha = :senha
+                  WHERE Siape = :siape AND CPF = :cpf";
     }
     else{
       return false;//usuário não existe
@@ -915,6 +1006,9 @@ function recuperaSenha($cpf,$email,$siape,$senha){
 
     try{
         $resultado = self::$con->prepare($query2) OR trigger_error($con->error, E_USER_ERROR);
+        $resultado->bindValue(':senha', password_hash($senha, PASSWORD_DEFAULT), PDO::PARAM_STR);
+        $resultado->bindValue(':siape', $siape, PDO::PARAM_STR);
+        $resultado->bindValue(':cpf', $cpf, PDO::PARAM_STR);
         $resultado->execute();
         return true;
     }
@@ -1064,9 +1158,14 @@ function baixaMaterial($idGrupoMat,$idLocal,$alteracao,$quantidade,$memorando,$i
 //manter as localizações
 function manterLocalizacao($novalocalizacao,$idLocalizacao,$ativo){
 
+            // ALTERADO: Força tipos esperados e usa bind de parâmetros.
+            $idLocalizacao = (int)$idLocalizacao;
+            $ativo = (int)$ativo;
             //verifica se já existe essa localização
-            $sql = "SELECT * FROM localizacao WHERE Localizacao = '$novalocalizacao' and idLocalizacao != $idLocalizacao";
+            $sql = "SELECT * FROM localizacao WHERE Localizacao = :novalocalizacao and idLocalizacao != :idLocalizacao";
             $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
+            $resultado->bindValue(':novalocalizacao', $novalocalizacao, PDO::PARAM_STR);
+            $resultado->bindValue(':idLocalizacao', $idLocalizacao, PDO::PARAM_INT);
             $resultado->execute();
             $nResultado = $resultado->fetchColumn();
 
@@ -1075,12 +1174,15 @@ function manterLocalizacao($novalocalizacao,$idLocalizacao,$ativo){
             }
             else{
                 $query = "UPDATE localizacao
-                               SET Localizacao = '$novalocalizacao',
-                                   ativo = $ativo
-                               WHERE idLocalizacao = $idLocalizacao";
+                               SET Localizacao = :novalocalizacao,
+                                   ativo = :ativo
+                               WHERE idLocalizacao = :idLocalizacao";
                 try{
 
                     $resultado = self::$con->prepare($query) OR trigger_error($con->error, E_USER_ERROR);
+                    $resultado->bindValue(':novalocalizacao', $novalocalizacao, PDO::PARAM_STR);
+                    $resultado->bindValue(':ativo', $ativo, PDO::PARAM_INT);
+                    $resultado->bindValue(':idLocalizacao', $idLocalizacao, PDO::PARAM_INT);
                     $resultado->execute();
                     return true;//localização alterada com sucesso!
     }
@@ -1095,15 +1197,24 @@ function manterLocalizacao($novalocalizacao,$idLocalizacao,$ativo){
 //manter os materiais
 function manterMaterial($descricao,$patrimonio,$categoria,$tipomaterial,$idGrupoMaterial,$nome_imagem,$siape){
 
+    // ALTERADO: Sanitiza inteiros usados no método e parametriza as queries.
+    $categoria = (int)$categoria;
+    $tipomaterial = (int)$tipomaterial;
+    $idGrupoMaterial = (int)$idGrupoMaterial;
+    $siape = (int)$siape;
+
     //verifica se já existe esse material
     $sql = "SELECT * FROM material
-            WHERE idGrupoMaterial != $idGrupoMaterial
+            WHERE idGrupoMaterial != :idGrupoMaterial
             and idGrupoMaterial  in(
             SELECT idGrupoMaterial
             FROM material
-            where NumPatrimonio = $patrimonio
-            or descricaoMat = '$descricao')";
+            where NumPatrimonio = :patrimonio
+            or descricaoMat = :descricao)";
     $resultado = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
+    $resultado->bindValue(':idGrupoMaterial', $idGrupoMaterial, PDO::PARAM_INT);
+    $resultado->bindValue(':patrimonio', $patrimonio, PDO::PARAM_STR);
+    $resultado->bindValue(':descricao', $descricao, PDO::PARAM_STR);
     $resultado->execute();
     $nResultado = $resultado->fetchColumn();
 
@@ -1112,16 +1223,23 @@ function manterMaterial($descricao,$patrimonio,$categoria,$tipomaterial,$idGrupo
     }
     else{
             $query = "UPDATE material
-                      SET DescricaoMat ='$descricao',
-                          NumPatrimonio ='$patrimonio',
-                          TipoMaterial_idTipoMaterial =$tipomaterial,
-                          Categoria_idCategoria = $categoria,
-                          FotoMaterial = '" . $nome_imagem . "',
-                          Usuarios_Siape = $siape
-                    WHERE idGrupoMaterial = $idGrupoMaterial";
+                      SET DescricaoMat = :descricao,
+                          NumPatrimonio = :patrimonio,
+                          TipoMaterial_idTipoMaterial = :tipomaterial,
+                          Categoria_idCategoria = :categoria,
+                          FotoMaterial = :nome_imagem,
+                          Usuarios_Siape = :siape
+                    WHERE idGrupoMaterial = :idGrupoMaterial";
         try{
 
             $resultado = self::$con->prepare($query) OR trigger_error($con->error, E_USER_ERROR);
+            $resultado->bindValue(':descricao', $descricao, PDO::PARAM_STR);
+            $resultado->bindValue(':patrimonio', $patrimonio, PDO::PARAM_STR);
+            $resultado->bindValue(':tipomaterial', $tipomaterial, PDO::PARAM_INT);
+            $resultado->bindValue(':categoria', $categoria, PDO::PARAM_INT);
+            $resultado->bindValue(':nome_imagem', $nome_imagem, PDO::PARAM_STR);
+            $resultado->bindValue(':siape', $siape, PDO::PARAM_INT);
+            $resultado->bindValue(':idGrupoMaterial', $idGrupoMaterial, PDO::PARAM_INT);
             $resultado->execute();
             return true;//localização alterada com sucesso!
         }
@@ -1141,15 +1259,25 @@ function tramitaMaterial($origem,$destino,$quantidade,$idmaterial,$motivo,$sublo
 
             //print_r ($id.": ");
             // ID Sub Localização
-            $idSubLoc = substr($idmaterial, $posicao + 1, 4);
+            $idSubLoc = (int)substr($idmaterial, $posicao + 1, 4);
 
             // ID GRUPO MATERIAL
-            $idMat = substr($idmaterial, 0, $posicao);
+            $idMat = (int)substr($idmaterial, 0, $posicao);
+            $origem = (int)$origem;
+            $destino = (int)$destino;
+            $quantidade = (int)$quantidade;
+            $sublocalizacao = (int)$sublocalizacao;
+            $siape = (int)$siape;
+            $idUsuario = (int)$idUsuario;
 
-            $query = "SELECT COUNT(Quantidade) FROM material WHERE idGrupoMaterial = $idMat
-                and localizacao_idlocalizacao = $origem
-                and sublocalizacao_idSubLocalizacao = $idSubLoc";
+            // ALTERADO: Consultas de tramitação individual parametrizadas.
+            $query = "SELECT COUNT(Quantidade) FROM material WHERE idGrupoMaterial = :idMat
+                and localizacao_idlocalizacao = :origem
+                and sublocalizacao_idSubLocalizacao = :idSubLoc";
             $resultado = self::$con->prepare($query) OR trigger_error($con->error, E_USER_ERROR);
+            $resultado->bindValue(':idMat', $idMat, PDO::PARAM_INT);
+            $resultado->bindValue(':origem', $origem, PDO::PARAM_INT);
+            $resultado->bindValue(':idSubLoc', $idSubLoc, PDO::PARAM_INT);
             $resultado->execute();
             $nResultado = $resultado->fetchColumn();
 
@@ -1159,12 +1287,15 @@ function tramitaMaterial($origem,$destino,$quantidade,$idmaterial,$motivo,$sublo
             else {
 
                 $idTramitados = "select idMaterial  from material
-                            where idGrupoMaterial = $idMat
-                            and localizacao_idlocalizacao = $origem
-                            and sublocalizacao_idSubLocalizacao = $idSubLoc
-                         order BY idMaterial  desc limit $quantidade";
+                            where idGrupoMaterial = :idMat
+                            and localizacao_idlocalizacao = :origem
+                            and sublocalizacao_idSubLocalizacao = :idSubLoc
+                         order BY idMaterial  desc limit {$quantidade}";
 
                 $resultado = self::$con->prepare($idTramitados) OR trigger_error($con->error, E_USER_ERROR);
+                $resultado->bindValue(':idMat', $idMat, PDO::PARAM_INT);
+                $resultado->bindValue(':origem', $origem, PDO::PARAM_INT);
+                $resultado->bindValue(':idSubLoc', $idSubLoc, PDO::PARAM_INT);
                 $resultado->execute();
                 $tramitados;
                 $i = 0;
@@ -1174,15 +1305,15 @@ function tramitaMaterial($origem,$destino,$quantidade,$idmaterial,$motivo,$sublo
                 }
                 $tramitados = substr($tramitados, 0, -1);
 
-                $query = "UPDATE material set Localizacao_idLocalizacao = '$destino',
-                                       sublocalizacao_idSubLocalizacao = '$sublocalizacao'
+                $query = "UPDATE material set Localizacao_idLocalizacao = :destino,
+                                       sublocalizacao_idSubLocalizacao = :sublocalizacao
                                  where idMaterial in(
                                 SELECT * from (
                                                 select idMaterial  from material
-                                                        where idGrupoMaterial = $idMat
-                                                        and localizacao_idlocalizacao = $origem
-                                                        and sublocalizacao_idSubLocalizacao = $idSubLoc
-                                                        order BY idMaterial  desc limit $quantidade
+                                                        where idGrupoMaterial = :idMat
+                                                        and localizacao_idlocalizacao = :origem
+                                                        and sublocalizacao_idSubLocalizacao = :idSubLoc
+                                                        order BY idMaterial  desc limit {$quantidade}
                                                )
                                 as t)";
 
@@ -1196,15 +1327,29 @@ function tramitaMaterial($origem,$destino,$quantidade,$idmaterial,$motivo,$sublo
                              Quantidade,
                              idMaterialTramitados,
                              sublocalizacao_idSubLocalizacao)
-                             VALUES ('$motivo',$idMat,$idUsuario,$siape,$origem,$destino,$quantidade,'$tramitados',$sublocalizacao)";
+                             VALUES (:motivo,:idMat,:idUsuario,:siape,:origem,:destino,:quantidade,:tramitados,:sublocalizacao)";
 
                 try {
                         //tramita o material
                         $tramitar = self::$con->prepare($query) OR trigger_error($con->error, E_USER_ERROR);
+                        $tramitar->bindValue(':destino', $destino, PDO::PARAM_INT);
+                        $tramitar->bindValue(':sublocalizacao', $sublocalizacao, PDO::PARAM_INT);
+                        $tramitar->bindValue(':idMat', $idMat, PDO::PARAM_INT);
+                        $tramitar->bindValue(':origem', $origem, PDO::PARAM_INT);
+                        $tramitar->bindValue(':idSubLoc', $idSubLoc, PDO::PARAM_INT);
                         $tramitar->execute();
 
                         //faz um insert na tabela tramitacaomat
                         $tramitacaomat = self::$con->prepare($query2) OR trigger_error($con->error, E_USER_ERROR);
+                        $tramitacaomat->bindValue(':motivo', $motivo, PDO::PARAM_STR);
+                        $tramitacaomat->bindValue(':idMat', $idMat, PDO::PARAM_INT);
+                        $tramitacaomat->bindValue(':idUsuario', $idUsuario, PDO::PARAM_INT);
+                        $tramitacaomat->bindValue(':siape', $siape, PDO::PARAM_INT);
+                        $tramitacaomat->bindValue(':origem', $origem, PDO::PARAM_INT);
+                        $tramitacaomat->bindValue(':destino', $destino, PDO::PARAM_INT);
+                        $tramitacaomat->bindValue(':quantidade', $quantidade, PDO::PARAM_INT);
+                        $tramitacaomat->bindValue(':tramitados', $tramitados, PDO::PARAM_STR);
+                        $tramitacaomat->bindValue(':sublocalizacao', $sublocalizacao, PDO::PARAM_INT);
                         $tramitacaomat->execute();
 
                         return TRUE;
@@ -1217,10 +1362,12 @@ function tramitaMaterial($origem,$destino,$quantidade,$idmaterial,$motivo,$sublo
 
 //Verifica se uma sublocalização é portátil, tramitável (bolsa, caixa, case, etc...)
 function eTramitavel($idSublocalizacao){
+    // ALTERADO: Consulta parametrizada para reduzir risco de injeção SQL.
     $texto = "SELECT tramitavel FROM sublocalizacao WHERE "
-            . "idSublocalizacao = $idSublocalizacao";
+            . "idSublocalizacao = :idSublocalizacao";
 
     $consulta = self::$con->prepare($texto) OR trigger_error($con->error, E_USER_ERROR);
+    $consulta->bindValue(':idSublocalizacao', (int)$idSublocalizacao, PDO::PARAM_INT);
     $consulta->execute();
     $resultado = $consulta->fetch(PDO::FETCH_ASSOC);
     //var_dump($resultado);
@@ -1232,10 +1379,13 @@ function eTramitavel($idSublocalizacao){
 function tramitaSublocalizacao($destino,$sublocalizacaoOrigem){
     //tramita a sublocalização mudando a chave estrangeira para corresponder a nova localização
     //a verificação se é tramitável não é feita na função
-    $sql = "UPDATE sublocalizacao SET Localizacao_idLocalizacao = $destino WHERE idSubLocalizacao = $sublocalizacaoOrigem";
+    // ALTERADO: UPDATE parametrizado para tramitação de sublocalização.
+    $sql = "UPDATE sublocalizacao SET Localizacao_idLocalizacao = :destino WHERE idSubLocalizacao = :sublocalizacaoOrigem";
 
     try{
         $consulta = self::$con->prepare($sql) OR trigger_error($con->error, E_USER_ERROR);
+        $consulta->bindValue(':destino', (int)$destino, PDO::PARAM_INT);
+        $consulta->bindValue(':sublocalizacaoOrigem', (int)$sublocalizacaoOrigem, PDO::PARAM_INT);
         $consulta->execute();
         return true;
     }catch(Exception $e){
@@ -1246,12 +1396,22 @@ function tramitaSublocalizacao($destino,$sublocalizacaoOrigem){
 //tramitaca os materias coletivamente
 function tramitacaoColetiva($origem,$destino,$motivo,$sublocalizacaoOrigem,$sublocalizacaoDestino,$siape,$idUsuario){
 
+    // ALTERADO: Sanitiza parâmetros numéricos da tramitação coletiva.
+    $origem = (int)$origem;
+    $destino = (int)$destino;
+    $sublocalizacaoOrigem = (int)$sublocalizacaoOrigem;
+    $sublocalizacaoDestino = (int)$sublocalizacaoDestino;
+    $siape = (int)$siape;
+    $idUsuario = (int)$idUsuario;
+
     //Consulta os diferentes IDs de grupo de material de uma dada sublocalização de um dado sublocal
     $consulta = "SELECT DISTINCT(idGrupoMaterial)
                          from material
-                         where localizacao_idlocalizacao = $origem
-                         and sublocalizacao_idSubLocalizacao = $sublocalizacaoOrigem";
+                         where localizacao_idlocalizacao = :origem
+                         and sublocalizacao_idSubLocalizacao = :sublocalizacaoOrigem";
     $tramitacao = self::$con->prepare($consulta) OR trigger_error($con->error, E_USER_ERROR);
+    $tramitacao->bindValue(':origem', $origem, PDO::PARAM_INT);
+    $tramitacao->bindValue(':sublocalizacaoOrigem', $sublocalizacaoOrigem, PDO::PARAM_INT);
     $tramitacao->execute();
 
     //percorre todos os materias
@@ -1261,20 +1421,26 @@ function tramitacaoColetiva($origem,$destino,$motivo,$sublocalizacaoOrigem,$subl
         //conta quantos materias de cada grupo (idGrupoMaterial) existem em uma dada sublocalização
         $Qtd = "SELECT COUNT(Quantidade)
                     from material
-                    where localizacao_idlocalizacao = $origem
-                    and sublocalizacao_idSubLocalizacao = $sublocalizacaoOrigem
-                    and idGrupoMaterial = $idGrupoMaterial";
+                    where localizacao_idlocalizacao = :origem
+                    and sublocalizacao_idSubLocalizacao = :sublocalizacaoOrigem
+                    and idGrupoMaterial = :idGrupoMaterial";
         $QtdMat = self::$con->prepare($Qtd) OR trigger_error($con->error, E_USER_ERROR);
+        $QtdMat->bindValue(':origem', $origem, PDO::PARAM_INT);
+        $QtdMat->bindValue(':sublocalizacaoOrigem', $sublocalizacaoOrigem, PDO::PARAM_INT);
+        $QtdMat->bindValue(':idGrupoMaterial', $idGrupoMaterial, PDO::PARAM_INT);
         $QtdMat->execute();
         $quantidade = $QtdMat->fetchColumn();
 
         $idTramitados = "SELECT idMaterial  FROM material
-                            WHERE idGrupoMaterial = $idGrupoMaterial
-                            and localizacao_idlocalizacao = $origem
-                            and sublocalizacao_idSubLocalizacao = $sublocalizacaoOrigem
-                            order BY idMaterial  desc limit $quantidade";
+                            WHERE idGrupoMaterial = :idGrupoMaterial
+                            and localizacao_idlocalizacao = :origem
+                            and sublocalizacao_idSubLocalizacao = :sublocalizacaoOrigem
+                            order BY idMaterial  desc limit {$quantidade}";
 
         $resultado = self::$con->prepare($idTramitados) OR trigger_error($con->error, E_USER_ERROR);
+        $resultado->bindValue(':idGrupoMaterial', $idGrupoMaterial, PDO::PARAM_INT);
+        $resultado->bindValue(':origem', $origem, PDO::PARAM_INT);
+        $resultado->bindValue(':sublocalizacaoOrigem', $sublocalizacaoOrigem, PDO::PARAM_INT);
         $resultado->execute();
         $tramitados = "";
 
@@ -1287,11 +1453,11 @@ function tramitacaoColetiva($origem,$destino,$motivo,$sublocalizacaoOrigem,$subl
         /*Muda a localizacao (Localizacao_idLocalizacao)e a sublocalizacao (Sublocalizacao_idSublocalizacao)
         dos materiais pertencentes a um dado grupo (idGrupoMaterial) de uma dada localizacao e sublocalizacao.
         "Tramita" os materiais*/
-        $query = "UPDATE material set Localizacao_idLocalizacao = '$destino',
-                    sublocalizacao_idSubLocalizacao = '$sublocalizacaoDestino'
-                    where localizacao_idlocalizacao = $origem
-                    and sublocalizacao_idSubLocalizacao = $sublocalizacaoOrigem
-                    and idGrupoMaterial = $idGrupoMaterial";
+        $query = "UPDATE material set Localizacao_idLocalizacao = :destino,
+                    sublocalizacao_idSubLocalizacao = :sublocalizacaoDestino
+                    where localizacao_idlocalizacao = :origem
+                    and sublocalizacao_idSubLocalizacao = :sublocalizacaoOrigem
+                    and idGrupoMaterial = :idGrupoMaterial";
 
         //alimenta os registros quanto a tramitações na tabela tramitacaomat
         $query2 = "INSERT INTO tramitacaomat
@@ -1304,15 +1470,29 @@ function tramitacaoColetiva($origem,$destino,$motivo,$sublocalizacaoOrigem,$subl
                                  Quantidade,
                                  idMaterialTramitados,
                                  sublocalizacao_idSubLocalizacao)
-                                 VALUES ('$motivo',$idGrupoMaterial,$idUsuario,$siape,$origem,$destino,$quantidade,'$tramitados',$sublocalizacaoDestino)";
+                                 VALUES (:motivo,:idGrupoMaterial,:idUsuario,:siape,:origem,:destino,:quantidade,:tramitados,:sublocalizacaoDestino)";
 
         try {
             //tramita o material
             $tramitar = self::$con->prepare($query) OR trigger_error($con->error, E_USER_ERROR);
+            $tramitar->bindValue(':destino', $destino, PDO::PARAM_INT);
+            $tramitar->bindValue(':sublocalizacaoDestino', $sublocalizacaoDestino, PDO::PARAM_INT);
+            $tramitar->bindValue(':origem', $origem, PDO::PARAM_INT);
+            $tramitar->bindValue(':sublocalizacaoOrigem', $sublocalizacaoOrigem, PDO::PARAM_INT);
+            $tramitar->bindValue(':idGrupoMaterial', $idGrupoMaterial, PDO::PARAM_INT);
             $tramitar->execute();
 
             //faz um insert na tabela tramitacaomat
             $tramitacaomat = self::$con->prepare($query2) OR trigger_error($con->error, E_USER_ERROR);
+            $tramitacaomat->bindValue(':motivo', $motivo, PDO::PARAM_STR);
+            $tramitacaomat->bindValue(':idGrupoMaterial', $idGrupoMaterial, PDO::PARAM_INT);
+            $tramitacaomat->bindValue(':idUsuario', $idUsuario, PDO::PARAM_INT);
+            $tramitacaomat->bindValue(':siape', $siape, PDO::PARAM_INT);
+            $tramitacaomat->bindValue(':origem', $origem, PDO::PARAM_INT);
+            $tramitacaomat->bindValue(':destino', $destino, PDO::PARAM_INT);
+            $tramitacaomat->bindValue(':quantidade', $quantidade, PDO::PARAM_INT);
+            $tramitacaomat->bindValue(':tramitados', $tramitados, PDO::PARAM_STR);
+            $tramitacaomat->bindValue(':sublocalizacaoDestino', $sublocalizacaoDestino, PDO::PARAM_INT);
             $tramitacaomat->execute();
 
             $mensagem = true;
@@ -1328,8 +1508,10 @@ function tramitacaoColetiva($origem,$destino,$motivo,$sublocalizacaoOrigem,$subl
 //função para inserir novas localizações
 function insereLocalizacao($localizacao){
 
-            $verifica = "SELECT * FROM localizacao WHERE Localizacao = '$localizacao'";
+            // ALTERADO: Validação e insert parametrizados.
+            $verifica = "SELECT * FROM localizacao WHERE Localizacao = :localizacao";
             $resultado = self::$con->prepare($verifica) OR trigger_error($con->error, E_USER_ERROR);
+            $resultado->bindValue(':localizacao', $localizacao, PDO::PARAM_STR);
             $resultado->execute();
             $nResultado = $resultado->fetchColumn();
 
@@ -1337,11 +1519,12 @@ function insereLocalizacao($localizacao){
              return false; //localização já existe.
           }
           else{
-             $query = "INSERT INTO localizacao (Localizacao) VALUES ('$localizacao')";
+             $query = "INSERT INTO localizacao (Localizacao) VALUES (:localizacao)";
           }
 
           try{
              $exec = self::$con->prepare($query) OR trigger_error($con->error, E_USER_ERROR);
+             $exec->bindValue(':localizacao', $localizacao, PDO::PARAM_STR);
              $exec->execute();
 
              return true;
@@ -1354,10 +1537,16 @@ function insereLocalizacao($localizacao){
 //função para inserir novas localizações
 function insereSubLocalizacao($idLocalizacao,$sublocalizacao, $tramitavel){
 
+// ALTERADO: Sanitiza inteiros e usa bind de parâmetros para evitar interpolação direta.
+$idLocalizacao = (int)$idLocalizacao;
+$tramitavel = (int)$tramitavel;
+
 $verifica = "SELECT * FROM sublocalizacao
-            WHERE sublocalizacao = '$sublocalizacao'
-            and localizacao_idLocalizacao = '$idLocalizacao'";
+            WHERE sublocalizacao = :sublocalizacao
+            and localizacao_idLocalizacao = :idLocalizacao";
 $resultado = self::$con->prepare($verifica) OR trigger_error($con->error, E_USER_ERROR);
+$resultado->bindValue(':sublocalizacao', $sublocalizacao, PDO::PARAM_STR);
+$resultado->bindValue(':idLocalizacao', $idLocalizacao, PDO::PARAM_INT);
 $resultado->execute();
 $nResultado = $resultado->fetchColumn();
 
@@ -1368,11 +1557,14 @@ else{
  $query = "INSERT INTO sublocalizacao
                        (subLocalizacao,
                        localizacao_idLocalizacao,tramitavel)
-            VALUES ('$sublocalizacao','$idLocalizacao',$tramitavel)";
+            VALUES (:sublocalizacao,:idLocalizacao,:tramitavel)";
 }
 
     try{
      $exec = self::$con->prepare($query) OR trigger_error($con->error, E_USER_ERROR);
+     $exec->bindValue(':sublocalizacao', $sublocalizacao, PDO::PARAM_STR);
+     $exec->bindValue(':idLocalizacao', $idLocalizacao, PDO::PARAM_INT);
+     $exec->bindValue(':tramitavel', $tramitavel, PDO::PARAM_INT);
      $exec->execute();
 
      return true;
@@ -1386,8 +1578,9 @@ else{
 //função para inserir usuários
 function insereUsuario($nome,$cpf,$email,$siape,$senha,$senha2){
 
-$verifica = "SELECT * FROM usuarios WHERE siape = '$siape'";
+$verifica = "SELECT * FROM usuarios WHERE siape = :siape";
 $resultado = self::$con->prepare($verifica) OR trigger_error($con->error, E_USER_ERROR);
+$resultado->bindValue(':siape', $siape, PDO::PARAM_STR);
 $resultado->execute();
 $nResultado = $resultado->fetchColumn();
 
@@ -1398,11 +1591,17 @@ if($senha != $senha2){
    return false; //senhas não conferem.
 }
 else{
+ // ALTERADO: Cadastro passa a salvar hash moderno com password_hash e parâmetros bindados.
  $query = "insert into usuarios (CPF, email, NomeUsuario, Permissao_idPermissao, Senha, Siape)
-            VALUES('$cpf','$email','$nome',2,md5('$senha'),'$siape')";
+            VALUES(:cpf,:email,:nome,2,:senha,:siape)";
 }
     try{
             $exec = self::$con->prepare($query) OR trigger_error($con->error, E_USER_ERROR);
+            $exec->bindValue(':cpf', $cpf, PDO::PARAM_STR);
+            $exec->bindValue(':email', $email, PDO::PARAM_STR);
+            $exec->bindValue(':nome', $nome, PDO::PARAM_STR);
+            $exec->bindValue(':senha', password_hash($senha, PASSWORD_DEFAULT), PDO::PARAM_STR);
+            $exec->bindValue(':siape', $siape, PDO::PARAM_STR);
             $exec->execute();
 
          return true;//usuário cadastrado com sucesso
