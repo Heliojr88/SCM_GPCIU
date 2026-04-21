@@ -2,9 +2,13 @@
 session_start();
 require("../app/pdo.php");
 require_once("upload_helper.php");
+require_once("security_helper.php");
 
 $_pdo = new connectDB();
 $_pdo->conectar();
+// ALTERADO: Endurece sessão e prepara token CSRF.
+scmEnforceSessionTimeout('login.php');
+scmEnsureCsrfToken();
 
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
@@ -26,6 +30,11 @@ if($_SESSION['permissao'] != 1){
 }
    
 if(!empty($_POST) or !empty($_GET)){
+// ALTERADO: Proteção CSRF no cadastro de itens.
+if (!scmValidateCsrfToken()) {
+    echo"<script language='javascript' type='text/javascript'>alert('Sessão inválida. Atualize a página e tente novamente.');window.location.href='indicemat.php';</script>";
+    die();
+}
 
 $quantidade      = $_POST['quantidade'];
 $idGrupoMaterial = $_POST['material'];
@@ -193,6 +202,7 @@ $cadastrar = $_pdo->insereItensMaterial($quantidade,$localizacao,$nome_imagem,$s
                     <br />
                    
 				   <form action="<?php echo $_SERVER['PHP_SELF'] ?>" id="indicemat" name="indicemat" method="POST"  enctype="multipart/form-data"  class="form-horizontal form-label-left">
+                      <?= scmCsrfInput(); ?>
 					 
 					 <div class="form-group">
                       <label class="control-label col-md-3 col-sm-3 col-xs-12" for="material">Materiais</label>

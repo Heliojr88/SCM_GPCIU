@@ -3,9 +3,12 @@
 session_start();
 
 require("../app/pdo.php");
+require_once("security_helper.php");
 
 $_pdo = new connectDB();
 $_pdo->conectar();
+// ALTERADO: Inicializa token CSRF para o formulário de login.
+scmEnsureCsrfToken();
 
 
 if(!empty($_POST) or !empty($_GET)){
@@ -20,15 +23,28 @@ if(!empty($_POST) or !empty($_GET)){
 		$senha = $_POST['senha'];
 
 		if (isset($entrar)) {
+			// ALTERADO: Bloqueia envio sem token CSRF válido.
+			if (!scmValidateCsrfToken()) {
+				echo"<script language='javascript' type='text/javascript'>alert('Sessão inválida. Atualize a página e tente novamente.');window.location.href='login.php';</script>";
+				die();
+			}
+			// ALTERADO: Rate-limit progressivo por usuário+IP para reduzir brute force.
+			$rateLimit = scmLoginRateLimitCheck($siape);
+			if ($rateLimit['blocked']) {
+				echo"<script language='javascript' type='text/javascript'>alert('Muitas tentativas de login. Aguarde ".$rateLimit['retry_after']." segundos.');window.location.href='login.php';</script>";
+				die();
+			}
 			// ALTERADO: Login usa retorno direto da camada de dados com verificação segura.
 			$verifica = $_pdo->login($siape, $senha);
                 //echo $verifica;
 				
 		if (!$verifica){
+			scmLoginRateLimitFail($rateLimit['key']);
 		//  echo"<script language='javascript' type='text/javascript'>alert('Por motivos de segurança, se esse é o seu Primeiro Acesso, entre em contato com o Cb Martins para ativar o seu usuário. Caso contrário, verifique se o seu Login/Senha estão corretos!');window.location.href='login.php';</script>";
 			echo"<script language='javascript' type='text/javascript'>alert('Login e/ou senha incorretos');window.location.href='login.php';</script>";
 			die();
 		}else if($verifica['ativo'] == 0){
+			scmLoginRateLimitFail($rateLimit['key']);
 			echo"<script language='javascript' type='text/javascript'>alert('Por motivos de segurança, se esse é o seu Primeiro Acesso, entre em contato com o Sgt Delvan para ativar o seu usuário.');window.location.href='login.php';</script>";
 		}
 		else{
@@ -46,6 +62,10 @@ if(!empty($_POST) or !empty($_GET)){
 				$_SESSION['senha'] = true;
 			$_SESSION['siape'] = $siape;
 			$_SESSION['permissao'] = $res[2];
+			// ALTERADO: Reseta contador de tentativas e rotaciona session ID após autenticação.
+			scmLoginRateLimitReset($rateLimit['key']);
+			scmRotateSessionOnLogin();
+			scmEnforceSessionTimeout('login.php');
 								
 				// ALTERADO: Removido uso de variável indefinida no cookie de login.
 				header("Location:index6.php");					
@@ -91,6 +111,7 @@ if(!empty($_POST) or !empty($_GET)){
 	  <img src="images/logo.png">
 	  </div>
             <form method="POST" action="login.php" name="login">
+              <?= scmCsrfInput(); ?>
               <h1>SEJA BEM VINDO	</h1>
               <div>
                 <input type="text" class="form-control" name="siape" id="siape" placeholder="siape" required="*" />

@@ -713,12 +713,16 @@ function login($siape, $senha){
 
     $hashArmazenado = $usuario['Senha'];
     $senhaValida = false;
+    $config = scmConfig();
+    $allowLegacyMd5 = !empty($config['auth_allow_legacy_md5']);
 
     if (password_get_info($hashArmazenado)['algo'] !== 0) {
         $senhaValida = password_verify($senha, $hashArmazenado);
-    } else {
+    } else if ($allowLegacyMd5) {
         $senhaValida = (md5($senha) === $hashArmazenado);
         if ($senhaValida) {
+            // ALTERADO: Registra uso de credencial legada para apoiar desligamento do fallback MD5.
+            error_log('SCM_AUTH_LEGACY_MD5_LOGIN siape=' . $siape . ' idUsuario=' . $usuario['idUsuario']);
             $novoHash = password_hash($senha, PASSWORD_DEFAULT);
             $atualiza = self::$con->prepare("UPDATE usuarios SET Senha = :senha WHERE idUsuario = :idUsuario");
             $atualiza->bindValue(':senha', $novoHash, PDO::PARAM_STR);
@@ -726,6 +730,8 @@ function login($siape, $senha){
             $atualiza->execute();
             $usuario['Senha'] = $novoHash;
         }
+    } else {
+        $senhaValida = false;
     }
 
     if(!$senhaValida){

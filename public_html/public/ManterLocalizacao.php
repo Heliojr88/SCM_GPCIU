@@ -3,6 +3,7 @@ session_start();
 $UsuarioLogado = $_SESSION['nome'];
 require("../app/pdo.php");
 require_once("response_helper.php");
+require_once("security_helper.php");
 
 if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == true))
 {
@@ -17,6 +18,9 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
 
 $_pdo = new connectDB();
 $_pdo->conectar();
+// ALTERADO: Endurece sessão e prepara token CSRF.
+scmEnforceSessionTimeout('login.php');
+scmEnsureCsrfToken();
 
 $nome = $_SESSION['nome'];
 
@@ -27,6 +31,11 @@ if($_SESSION['permissao'] != 1){
 }
    
 if(!empty($_POST)){
+    // ALTERADO: Proteção CSRF na manutenção de localização.
+    if (!scmValidateCsrfToken()) {
+        scmUiAlert('Sessão inválida. Atualize a página e tente novamente.', 'ManterLocalizacao.php');
+        die();
+    }
 	  		 
 $novalocalizacao = $_POST['novalocalizacao'];
 $idLocalizacao   = $_POST['localizacao'];
@@ -187,6 +196,7 @@ else{
                     <br />
                    
 		<form action="ManterLocalizacao.php" id="ManterLocalizacao" name="ManterLocalizacao" method="POST" class="form-horizontal form-label-left">
+                      <?= scmCsrfInput(); ?>
 
                     <div class="form-group">
                         <label class="control-label col-md-3 col-sm-3 col-xs-12" for="localizacao">Localização</label>

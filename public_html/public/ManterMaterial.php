@@ -3,11 +3,15 @@ session_start();
 require("../app/pdo.php");
 require_once("response_helper.php");
 require_once("upload_helper.php");
+require_once("security_helper.php");
 
 error_reporting(E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
 $_pdo = new connectDB();
 $_pdo->conectar();
+// ALTERADO: Endurece sessão e prepara token CSRF.
+scmEnforceSessionTimeout('login.php');
+scmEnsureCsrfToken();
 
 $nome = $_SESSION['nome'];
 $siape = $_SESSION['siape'];
@@ -26,6 +30,11 @@ if ($_SESSION['permissao'] != 1) {
 }
 
 if (!empty($_POST) or ! empty($_GET)) {
+    // ALTERADO: Proteção CSRF na manutenção de material.
+    if (!scmValidateCsrfToken()) {
+        scmUiAlert('Sessão inválida. Atualize a página e tente novamente.', 'ManterMaterial.php');
+        die();
+    }
 
     $descricao       = $_POST['descricao'];
     $patrimonio      = $_POST['patrimonio'];
@@ -191,7 +200,8 @@ if (!empty($_POST) or ! empty($_GET)) {
                                     <div class="x_content">
                                         <br />
 
-                                        <form action="<?php echo $_SERVER['PHP_SELF'] ?>" id="ManterMaterial" name="ManterMaterial" method="POST"  enctype="multipart/form-data"  class="form-horizontal form-label-left">
+                                    <form action="<?php echo $_SERVER['PHP_SELF'] ?>" id="ManterMaterial" name="ManterMaterial" method="POST"  enctype="multipart/form-data"  class="form-horizontal form-label-left">
+                                        <?= scmCsrfInput(); ?>
 
                                             <div class="form-group">
                                                 <label class="control-label col-md-3 col-sm-3 col-xs-12" for="material">Materiais</label>

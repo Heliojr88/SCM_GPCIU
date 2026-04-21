@@ -2,9 +2,13 @@
 session_start();
 require("../app/pdo.php");
 require_once("upload_helper.php");
+require_once("security_helper.php");
 
 $_pdo = new connectDB();
 $_pdo->conectar();
+// ALTERADO: Endurece sessão e prepara token CSRF.
+scmEnforceSessionTimeout('login.php');
+scmEnsureCsrfToken();
 
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
@@ -26,6 +30,11 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
    }	
 	
    if(!empty($_POST) or !empty($_GET)){
+	// ALTERADO: Proteção CSRF no cadastro de material.
+	if (!scmValidateCsrfToken()) {
+		echo"<script language='javascript' type='text/javascript'>alert('Sessão inválida. Atualize a página e tente novamente.');window.location.href='material.php';</script>";
+		die();
+	}
 		
 	$descricao = $_POST['descricao'];	 	
 	$quantidade = $_POST['quantidade'];
@@ -199,6 +208,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
                     <br />
                     
                    <form action="<?= $_SERVER['PHP_SELF']?>" id="material" name="material" method="POST"  enctype="multipart/form-data"  class="form-horizontal form-label-left">
+                      <?= scmCsrfInput(); ?>
 
                       <div class="form-group">
                         <label class="control-label col-md-3 col-sm-3 col-xs-12" for="descricao">Descrição<span class="required">*</span>
