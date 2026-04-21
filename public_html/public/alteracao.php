@@ -1,6 +1,7 @@
 <?php
 session_start();
 $UsuarioLogado = $_SESSION['nome'];
+require_once("security_helper.php");
 
 if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == true))
 {
@@ -15,10 +16,18 @@ require("../app/pdo.php");
 
 $_pdo = new connectDB();
 $_pdo->conectar();
+// ALTERADO: Endurece sessão e prepara token CSRF.
+scmEnforceSessionTimeout('login.php');
+scmEnsureCsrfToken();
 
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
 if(!empty($_POST) or !empty($_GET)){
+// ALTERADO: Proteção CSRF no registro de alteração.
+if (!scmValidateCsrfToken()) {
+    echo"<script language='javascript' type='text/javascript'>alert('Sessão inválida. Atualize a página e tente novamente.');window.location.href='alteracao.php';</script>";
+    die();
+}
 	 
 $UsuarioLogado = $_SESSION['nome'];
 $idUsuario = $_SESSION['idUsuario'];
@@ -183,6 +192,7 @@ $memorandoSei = $_POST['memorandoSei'];
                     <br />
                    
 				   <form action="alteracao.php" id="materiais" name="materiais" method="POST" class="form-horizontal form-label-left">
+                      <?= scmCsrfInput(); ?>
 
 					  
 					  <div class="form-group">

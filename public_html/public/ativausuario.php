@@ -4,20 +4,31 @@ $nome  = $_SESSION['nome'];
 $siape = $_SESSION['siape'];
 
 require("../app/pdo.php");
+require_once("response_helper.php");
+require_once("security_helper.php");
 
 $_pdo = new connectDB();
 $_pdo->conectar();
+// ALTERADO: Endurece sessão e prepara token CSRF.
+scmEnforceSessionTimeout('login.php');
+scmEnsureCsrfToken();
 
 $teste  = $_pdo->getMaster($siape);
 $master = $teste->fetch(PDO::FETCH_ASSOC);
 
 //verifica se o usuário é master
 if($master['master'] != 1){
-	   echo"<script language='javascript' type='text/javascript'>alert('Usuário sem permissão para acessar a funcionalidade!');window.location.href='index7.php';</script>";
+	   // ALTERADO: Alerta padronizado para UI.
+	   scmUiAlert('Usuário sem permissão para acessar a funcionalidade!', 'index7.php');
        
 }
 
  if(!empty($_POST) or !empty($_GET)){
+    // ALTERADO: Proteção CSRF na ativação de usuário.
+    if (!scmValidateCsrfToken()) {
+        scmUiAlert('Sessão inválida. Atualize a página e tente novamente.', 'ativausuario.php');
+        die();
+    }
 	 
     $siapeUsuario   = $_POST['usuario'];
     $ativar  = $_POST['ativar'];
@@ -26,7 +37,9 @@ if($master['master'] != 1){
  $ativa = $_pdo->ativaUsuario($ativar,$siapeUsuario);
  
  if ($ativa==0){
-		echo"<script language='javascript' type='text/javascript'>alert('Falha na ativação do usuário');window.location.href='ativausuario.php';</script>";
+		// ALTERADO: Mensagem de erro agora usa getLastResponse() quando disponível.
+		$mensagemErro = scmDomainMessage($_pdo, 'Falha na ativação do usuário');
+		scmUiAlert($mensagemErro, 'ativausuario.php');
 		die();
 	}else if ($ativa){
 	  $email_assunto = "Ativação de usuário no SCM - 17° GBM";
@@ -37,10 +50,12 @@ if($master['master'] != 1){
           //envia email
           $email = $_pdo->enviaEmail($siapeUsuario,$email_assunto,$mensagem);
           if($email == 1){
-                  echo"<script language='javascript' type='text/javascript'>alert('Email enviado com sucesso!');window.location.href='ativausuario.php';</script>";
+                  // ALTERADO: Alerta padronizado para UI.
+                  scmUiAlert('Email enviado com sucesso!', 'ativausuario.php');
           }
           else{
-                  echo"<script language='javascript' type='text/javascript'>alert('Usuário ativado com sucesso!');window.location.href='ativausuario.php';</script>";
+                  // ALTERADO: Alerta padronizado para UI.
+                  scmUiAlert('Usuário ativado com sucesso!', 'ativausuario.php');
 				  die();
           }
 		
@@ -189,6 +204,7 @@ if($master['master'] != 1){
                     <br />
                    
                     <form action="ativausuario.php" id="ativausuario" name="ativausuario" method="POST" class="form-horizontal form-label-left">
+                      <?= scmCsrfInput(); ?>
 
 			<div class="form-group">
                         <label class="control-label col-md-3 col-sm-3 col-xs-12" for="usuario">Usuários</label>

@@ -1,3 +1,8 @@
+<?php
+require_once("security_helper.php");
+// ALTERADO: Expira sessão inativa automaticamente nas páginas internas.
+scmEnforceSessionTimeout('login.php');
+?>
 <div class="nav_menu">
             <nav class="" role="navigation">
               <div class="nav toggle">

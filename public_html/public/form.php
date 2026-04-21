@@ -4,11 +4,19 @@ session_start();
 
 //acesso ao PDO
 require("../app/pdo.php");
+require_once("security_helper.php");
 
 $_pdo = new connectDB();
 $_pdo->conectar();
+// ALTERADO: Inicializa token CSRF para o formulário de cadastro.
+scmEnsureCsrfToken();
 
 if(!empty($_POST) or !empty($_GET)){
+// ALTERADO: Proteção CSRF no cadastro de usuário.
+if (!scmValidateCsrfToken()) {
+    echo"<script language='javascript' type='text/javascript'>alert('Sessão inválida. Atualize a página e tente novamente.');window.location.href='form.php';</script>";
+    die();
+}
   
 $nome   = $_POST['nome'];	 	
 $cpf    = $_POST['cpf'];
@@ -208,6 +216,7 @@ if($cadastrar){
                     <br />
                    
 				   <form id="cadastro" method="POST" class="form-horizontal form-label-left">
+                      <?= scmCsrfInput(); ?>
 
                       <div class="form-group">
                         <label class="control-label col-md-3 col-sm-3 col-xs-12" for="nome">Nome Completo<span class="required">*</span>

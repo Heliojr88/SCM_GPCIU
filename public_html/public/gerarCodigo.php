@@ -198,7 +198,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
 							$id .= $material['idGrupoMaterial'];
 							$id .= "&";
 							
-							$aux  = 'qr_img0.50j/php/qr_img.php?';	
+							$aux  = 'qr_img0.50j/php/qr_img.php?';
 							$aux .= $id;
 							$aux .= 'e=H&';
 							$aux .= 's=4&';
@@ -206,7 +206,8 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
 							
 						  ?>
 						  <div style="float: left; border: 1px solid #000;">
-								<img src="<?=print $aux;?>" />
+								<!-- ALTERADO: Corrige src do QR Code sem uso de print inline. -->
+								<img src="<?=$aux;?>" />
 						  </div>
 						  
 						  
@@ -221,7 +222,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
 							$id2 .= $material['Localizacao_idLocalizacao'];
 							$id2 .= "&";
 							
-							$aux2  = 'qr_img0.50j/php/qr_img.php?';	
+							$aux2  = 'qr_img0.50j/php/qr_img.php?';
 							$aux2 .= $id2;
 							$aux2 .= 'e=H&';
 							$aux2 .= 's=4&';
@@ -229,7 +230,8 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
 							
 						  ?>
 							<div style="float: left; border: 1px solid #000;">
-								<img src="<?=print $aux;?>" />
+								<!-- ALTERADO: Corrige variável do QR da localização (era $aux e repetia QR do material). -->
+								<img src="<?=$aux2;?>" />
 							</div>
 						  </td>
 						  <td><?=$material['Localizacao']?></td>

@@ -2,17 +2,28 @@
 session_start();
 $UsuarioLogado = $_SESSION['nome'];
 require("../app/pdo.php");
+require_once("response_helper.php");
+require_once("security_helper.php");
 
 $_pdo = new connectDB();
 $_pdo->conectar();
+// ALTERADO: Endurece sessão e prepara token CSRF.
+scmEnforceSessionTimeout('login.php');
+scmEnsureCsrfToken();
 
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
 if($_SESSION['permissao'] != 1){
-        echo"<script language='javascript' type='text/javascript'>alert('Usuário sem permissão para acessar a funcionalidade!');window.location.href='index.php';</script>";
+        // ALTERADO: Alerta padronizado para UI.
+        scmUiAlert('Usuário sem permissão para acessar a funcionalidade!', 'index.php');
 }
 
 if(!empty($_POST) or !empty($_GET)){
+// ALTERADO: Proteção CSRF no cadastro de sublocalização.
+if (!scmValidateCsrfToken()) {
+   scmUiAlert('Sessão inválida. Atualize a página e tente novamente.', 'sublocalizacao.php');
+   die();
+}
 	 
 $UsuarioLogado = $_SESSION['nome'];
 $idUsuario     = $_SESSION['idUsuario'];
@@ -30,10 +41,13 @@ if (empty($tramitavel)){
 $cadastrar = $_pdo->insereSubLocalizacao($idLocalizacao,$sublocalizacao,$tramitavel);
 
 if($cadastrar){
-    echo"<script language='javascript' type='text/javascript'>alert('Sub Localização cadastrada com sucesso!');</script>";
+    // ALTERADO: Alerta padronizado para UI.
+    scmUiAlert('Sub Localização cadastrada com sucesso!');
 }
 else{
-   echo"<script language='javascript' type='text/javascript'>alert('Sub Localização já cadastrada no sistema');window.location.href='sublocalizacao.php';</script>";  
+   // ALTERADO: Mensagem de erro agora usa getLastResponse() quando disponível.
+   $mensagemErro = scmDomainMessage($_pdo, 'Sub Localização já cadastrada no sistema');
+   scmUiAlert($mensagemErro, 'sublocalizacao.php');
 }
 
 if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == true))
@@ -41,7 +55,8 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
 	unset($_SESSION['siape']);
 	unset($_SESSION['senha']);
 	
-	echo"<script language='javascript' type='text/javascript'>alert('Gentileza efetue login no Sistema');</script>";
+	// ALTERADO: Alerta padronizado para UI.
+	scmUiAlert('Gentileza efetue login no Sistema');
 	
 	header('location:login.php');
 }
@@ -189,6 +204,7 @@ if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == tru
                     <br />
                    
                     <form action="sublocalizacao.php" id="ManterLocalizacao" name="ManterLocalizacao" method="POST" class="form-horizontal form-label-left">
+                      <?= scmCsrfInput(); ?>
 
 					   <div class="form-group">
                         <label class="control-label col-md-3 col-sm-3 col-xs-12" for="localizacao">Localização</label>

@@ -2,28 +2,40 @@
 session_start();
 $UsuarioLogado = $_SESSION['nome'];
 require("../app/pdo.php");
+require_once("response_helper.php");
+require_once("security_helper.php");
 
 if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == true))
 {
 	unset($_SESSION['siape']);
 	unset($_SESSION['senha']);
 	
-	echo"<script language='javascript' type='text/javascript'>alert('Gentileza efetue login no Sistema');</script>";
+	// ALTERADO: Alerta padronizado para UI.
+	scmUiAlert('Gentileza efetue login no Sistema');
 	
 	header('location:login.php');	
 }
 
 $_pdo = new connectDB();
 $_pdo->conectar();
+// ALTERADO: Endurece sessão e prepara token CSRF.
+scmEnforceSessionTimeout('login.php');
+scmEnsureCsrfToken();
 
 $nome = $_SESSION['nome'];
 
 //permissão de administrador
 if($_SESSION['permissao'] != 1){
-    echo"<script language='javascript' type='text/javascript'>alert('Usuário sem permissão para acessar a funcionalidade!');window.location.href='index.php';</script>";
+    // ALTERADO: Alerta padronizado para UI.
+    scmUiAlert('Usuário sem permissão para acessar a funcionalidade!', 'index.php');
 }
    
 if(!empty($_POST)){
+    // ALTERADO: Proteção CSRF na manutenção de localização.
+    if (!scmValidateCsrfToken()) {
+        scmUiAlert('Sessão inválida. Atualize a página e tente novamente.', 'ManterLocalizacao.php');
+        die();
+    }
 	  		 
 $novalocalizacao = $_POST['novalocalizacao'];
 $idLocalizacao   = $_POST['localizacao'];
@@ -32,10 +44,13 @@ $ativo           = $_POST['ativa'];
 $manterLocalizacao = $_pdo->manterLocalizacao($novalocalizacao,$idLocalizacao,$ativo); 		
 
 if ($manterLocalizacao){
-   echo"<script language='javascript' type='text/javascript'>alert('Localização alterada com sucesso!');</script>";
+   // ALTERADO: Alerta padronizado para UI.
+   scmUiAlert('Localização alterada com sucesso!');
 } 
 else{
-       echo"<script language='javascript' type='text/javascript'>alert('Localização inserida já existe!');</script>";
+       // ALTERADO: Mensagem de erro agora usa getLastResponse() quando disponível.
+       $mensagemErro = scmDomainMessage($_pdo, 'Localização inserida já existe!');
+       scmUiAlert($mensagemErro);
 }					
 
 }
@@ -181,6 +196,7 @@ else{
                     <br />
                    
 		<form action="ManterLocalizacao.php" id="ManterLocalizacao" name="ManterLocalizacao" method="POST" class="form-horizontal form-label-left">
+                      <?= scmCsrfInput(); ?>
 
                     <div class="form-group">
                         <label class="control-label col-md-3 col-sm-3 col-xs-12" for="localizacao">Localização</label>

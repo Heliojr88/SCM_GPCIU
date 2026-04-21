@@ -1,11 +1,17 @@
 <?php
 session_start();
 require("../app/pdo.php");
+require_once("response_helper.php");
+require_once("upload_helper.php");
+require_once("security_helper.php");
 
 error_reporting(E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
 $_pdo = new connectDB();
 $_pdo->conectar();
+// ALTERADO: Endurece sessão e prepara token CSRF.
+scmEnforceSessionTimeout('login.php');
+scmEnsureCsrfToken();
 
 $nome = $_SESSION['nome'];
 $siape = $_SESSION['siape'];
@@ -14,68 +20,46 @@ if ((!isset($_SESSION['siape']) == true) and ( !isset($_SESSION['senha']) == tru
     unset($_SESSION['siape']);
     unset($_SESSION['senha']);
 
-    echo("<script language='javascript' type='text/javascript'>alert('Gentileza realizar login no Sistema!');window.location.href='login.php';</script>");
+    // ALTERADO: Alerta padronizado para UI.
+    scmUiAlert('Gentileza realizar login no Sistema!', 'login.php');
 }
 
 if ($_SESSION['permissao'] != 1) {
-    echo"<script language='javascript' type='text/javascript'>alert('Usuário sem permissão para acessar a funcionalidade!');window.location.href='index.php';</script>";
+    // ALTERADO: Alerta padronizado para UI.
+    scmUiAlert('Usuário sem permissão para acessar a funcionalidade!', 'index.php');
 }
 
 if (!empty($_POST) or ! empty($_GET)) {
+    // ALTERADO: Proteção CSRF na manutenção de material.
+    if (!scmValidateCsrfToken()) {
+        scmUiAlert('Sessão inválida. Atualize a página e tente novamente.', 'ManterMaterial.php');
+        die();
+    }
 
     $descricao       = $_POST['descricao'];
     $patrimonio      = $_POST['patrimonio'];
     $categoria       = $_POST['categoria'];
     $tipomaterial    = $_POST['tipomaterial'];
     $idGrupoMaterial = $_POST['material'];
-    $foto            = $_FILES["foto"];
-    $error;
-
-    // Se a foto estiver sido selecionada
-    if (!empty($foto["name"])) {
-
-        // Largura máxima em pixels
-        $largura = 150;
-        // Altura máxima em pixels
-        $altura = 180;
-        // Tamanho máximo do arquivo em bytes
-        $tamanho = 1000;
-
-        // Verifica se o arquivo é uma imagem
-        if (!preg_match("/^image\/(pjpeg|jpeg|png|gif|bmp)$/", $foto["type"])) {
-            $error[1] = "Isso não é uma imagem.";
-        }
-
-        // Pega as dimensões da imagem
-        $dimensoes = getimagesize($foto["tmp_name"]);
-
-        // Se não houver nenhum erro
-        if (count($error) == 0) {
-
-            // Pega extensão da imagem
-            preg_match("/\.(gif|bmp|png|jpg|jpeg){1}$/i", $foto["name"], $ext);
-
-            // Gera um nome único para a imagem
-            $nome_imagem = md5(uniqid(time())) . "." . $ext[1];
-
-            // Caminho de onde ficará a imagem
-            $caminho_imagem = "fotos/" . $nome_imagem;
-
-            // Faz o upload da imagem para seu respectivo caminho
-            move_uploaded_file($foto["tmp_name"], $caminho_imagem);
-
-            // Insere os dados no banco
-            //$sql = mysql_query("INSERT INTO usuarios VALUES ('', '".$nome."', '".$email."', '".$nome_imagem."')");
-        }
+    $nome_imagem = null;
+    // ALTERADO: Upload de foto centralizado em helper com validação e mensagens de erro consistentes.
+    $uploadFoto = scmProcessMaterialPhoto('foto');
+    if (!$uploadFoto['ok']) {
+        scmUiAlert($uploadFoto['message'], 'ManterMaterial.php');
+        die();
     }
+    $nome_imagem = $uploadFoto['filename'];
     
     $manter = $_pdo->manterMaterial($descricao, $patrimonio, $categoria, $tipomaterial, $idGrupoMaterial, $nome_imagem, $siape);
     
     if($manter){
-        echo"<script language='javascript' type='text/javascript'>alert('Material Alterado com Sucesso!');</script>";
+        // ALTERADO: Alerta padronizado para UI.
+        scmUiAlert('Material Alterado com Sucesso!');
     }
     else{
-        echo"<script language='javascript' type='text/javascript'>alert('Já existe um material com essa descrição! Verifique os dados inseridos.');</script>";
+        // ALTERADO: Mensagem de erro agora usa getLastResponse() quando disponível.
+        $mensagemErro = scmDomainMessage($_pdo, 'Já existe um material com essa descrição! Verifique os dados inseridos.');
+        scmUiAlert($mensagemErro);
     }    
 }
 ?>
@@ -216,7 +200,8 @@ if (!empty($_POST) or ! empty($_GET)) {
                                     <div class="x_content">
                                         <br />
 
-                                        <form action="<?php echo $_SERVER['PHP_SELF'] ?>" id="ManterMaterial" name="ManterMaterial" method="POST"  enctype="multipart/form-data"  class="form-horizontal form-label-left">
+                                    <form action="<?php echo $_SERVER['PHP_SELF'] ?>" id="ManterMaterial" name="ManterMaterial" method="POST"  enctype="multipart/form-data"  class="form-horizontal form-label-left">
+                                        <?= scmCsrfInput(); ?>
 
                                             <div class="form-group">
                                                 <label class="control-label col-md-3 col-sm-3 col-xs-12" for="material">Materiais</label>

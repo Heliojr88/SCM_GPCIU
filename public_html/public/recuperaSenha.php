@@ -1,15 +1,24 @@
 <?php
 session_start();
 require("../app/pdo.php");
+require_once("response_helper.php");
+require_once("security_helper.php");
 
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
 $_pdo = new connectDB();
 $_pdo->conectar();
+// ALTERADO: Inicializa token CSRF para recuperação de senha.
+scmEnsureCsrfToken();
 
 $nome = $_SESSION['nome'];
 
 if(!empty($_POST) or !empty($_GET)){
+// ALTERADO: Proteção CSRF na recuperação de senha.
+if (!scmValidateCsrfToken()) {
+       scmUiAlert('Sessão inválida. Atualize a página e tente novamente.', 'recuperaSenha.php');
+       die();
+}
 	
 $cpf    = $_POST['cpf'];
 $email  = $_POST['email'];
@@ -18,17 +27,21 @@ $senha  = $_POST['senha'];
 $senha2 = $_POST['senha2'];
 
 if ($senha != $senha2){
-       echo"<script language='javascript' type='text/javascript'>alert('As senhas digitadas não correspondem entre si');window.location.href='recuperaSenha.php';</script>";
+       // ALTERADO: Alerta padronizado para UI.
+       scmUiAlert('As senhas digitadas não correspondem entre si', 'recuperaSenha.php');
 }
 
 //função PDO para recuperar a senha
 $recupera = $_pdo->recuperaSenha($cpf,$email,$siape,$senha);
 
     if($recupera){
-      echo"<script language='javascript' type='text/javascript'>alert('Senha Alterada com sucesso!');window.location.href='login.php';</script>";
+      // ALTERADO: Alerta padronizado para UI.
+      scmUiAlert('Senha Alterada com sucesso!', 'login.php');
     } 
-    else{			
-        echo"<script language='javascript' type='text/javascript'>alert('Usuário não encontrado no SCM!');window.location.href='login.php';</script>";
+    else{
+        // ALTERADO: Mensagem de erro agora usa getLastResponse() quando disponível.
+        $mensagemErro = scmDomainMessage($_pdo, 'Usuário não encontrado no SCM!');
+        scmUiAlert($mensagemErro, 'login.php');
     }	
 }
 ?>
@@ -165,6 +178,7 @@ $recupera = $_pdo->recuperaSenha($cpf,$email,$siape,$senha);
                     <br />
                    
 				   <form action="recuperaSenha.php" id="recuperaSenha" name="recuperaSenha" method="POST" class="form-horizontal form-label-left">
+					  <?= scmCsrfInput(); ?>
 					
                         <div class="form-group">
                         <label for="email" class="control-label col-md-3 col-sm-3 col-xs-12">Email</label>
