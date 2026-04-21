@@ -2,13 +2,15 @@
 session_start();
 $UsuarioLogado = $_SESSION['nome'];
 require("../app/pdo.php");
+require_once("response_helper.php");
 
 if((!isset ($_SESSION['siape']) == true) and (!isset ($_SESSION['senha']) == true))
 {
 	unset($_SESSION['siape']);
 	unset($_SESSION['senha']);
 	
-	echo"<script language='javascript' type='text/javascript'>alert('Gentileza efetue login no Sistema');</script>";
+	// ALTERADO: Alerta padronizado para UI.
+	scmUiAlert('Gentileza efetue login no Sistema');
 	
 	header('location:login.php');	
 }
@@ -20,7 +22,8 @@ $nome = $_SESSION['nome'];
 
 //permissão de administrador
 if($_SESSION['permissao'] != 1){
-    echo"<script language='javascript' type='text/javascript'>alert('Usuário sem permissão para acessar a funcionalidade!');window.location.href='index.php';</script>";
+    // ALTERADO: Alerta padronizado para UI.
+    scmUiAlert('Usuário sem permissão para acessar a funcionalidade!', 'index.php');
 }
    
 if(!empty($_POST)){
@@ -32,10 +35,13 @@ $ativo           = $_POST['ativa'];
 $manterLocalizacao = $_pdo->manterLocalizacao($novalocalizacao,$idLocalizacao,$ativo); 		
 
 if ($manterLocalizacao){
-   echo"<script language='javascript' type='text/javascript'>alert('Localização alterada com sucesso!');</script>";
+   // ALTERADO: Alerta padronizado para UI.
+   scmUiAlert('Localização alterada com sucesso!');
 } 
 else{
-       echo"<script language='javascript' type='text/javascript'>alert('Localização inserida já existe!');</script>";
+       // ALTERADO: Mensagem de erro agora usa getLastResponse() quando disponível.
+       $mensagemErro = scmDomainMessage($_pdo, 'Localização inserida já existe!');
+       scmUiAlert($mensagemErro);
 }					
 
 }

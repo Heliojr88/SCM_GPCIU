@@ -1,6 +1,7 @@
 <?php
 session_start();
 require("../app/pdo.php");
+require_once("response_helper.php");
 
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
@@ -18,17 +19,21 @@ $senha  = $_POST['senha'];
 $senha2 = $_POST['senha2'];
 
 if ($senha != $senha2){
-       echo"<script language='javascript' type='text/javascript'>alert('As senhas digitadas não correspondem entre si');window.location.href='recuperaSenha.php';</script>";
+       // ALTERADO: Alerta padronizado para UI.
+       scmUiAlert('As senhas digitadas não correspondem entre si', 'recuperaSenha.php');
 }
 
 //função PDO para recuperar a senha
 $recupera = $_pdo->recuperaSenha($cpf,$email,$siape,$senha);
 
     if($recupera){
-      echo"<script language='javascript' type='text/javascript'>alert('Senha Alterada com sucesso!');window.location.href='login.php';</script>";
+      // ALTERADO: Alerta padronizado para UI.
+      scmUiAlert('Senha Alterada com sucesso!', 'login.php');
     } 
-    else{			
-        echo"<script language='javascript' type='text/javascript'>alert('Usuário não encontrado no SCM!');window.location.href='login.php';</script>";
+    else{
+        // ALTERADO: Mensagem de erro agora usa getLastResponse() quando disponível.
+        $mensagemErro = scmDomainMessage($_pdo, 'Usuário não encontrado no SCM!');
+        scmUiAlert($mensagemErro, 'login.php');
     }	
 }
 ?>

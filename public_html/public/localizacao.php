@@ -3,6 +3,7 @@ session_start();
 $UsuarioLogado = $_SESSION['nome'];
 
 require("../app/pdo.php");
+require_once("response_helper.php");
 
 $_pdo = new connectDB();
 $_pdo->conectar();
@@ -10,7 +11,8 @@ $_pdo->conectar();
 error_reporting(E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
 if ($_SESSION['permissao'] != 1) {
-    echo"<script language='javascript' type='text/javascript'>alert('Usuário sem permissão para acessar a funcionalidade!');window.location.href='index.php';</script>";
+    // ALTERADO: Alerta padronizado para UI.
+    scmUiAlert('Usuário sem permissão para acessar a funcionalidade!', 'index.php');
 }
 
 if (!empty($_POST) or ! empty($_GET)){
@@ -24,10 +26,13 @@ if (!empty($_POST) or ! empty($_GET)){
     $cadastro = $_pdo->insereLocalizacao($localizacao);
     
     if($cadastro){
-        echo"<script language='javascript' type='text/javascript'>alert('Localização cadastrada com sucesso!');</script>";
+        // ALTERADO: Alerta padronizado para UI.
+        scmUiAlert('Localização cadastrada com sucesso!');
     }
     else{
-        echo"<script language='javascript' type='text/javascript'>alert('Localização já existe no sistema!');</script>";
+        // ALTERADO: Mensagem de erro agora usa getLastResponse() quando disponível.
+        $mensagemErro = scmDomainMessage($_pdo, 'Localização já existe no sistema!');
+        scmUiAlert($mensagemErro);
     }    
 }
 
@@ -36,7 +41,8 @@ if ((!isset($_SESSION['siape']) == true) and ( !isset($_SESSION['senha']) == tru
     unset($_SESSION['siape']);
     unset($_SESSION['senha']);
 
-    echo"<script language='javascript' type='text/javascript'>alert('Gentileza efetue login no Sistema');</script>";
+    // ALTERADO: Alerta padronizado para UI.
+    scmUiAlert('Gentileza efetue login no Sistema');
 
     header('location:login.php');
 }

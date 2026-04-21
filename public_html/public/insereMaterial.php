@@ -1,5 +1,8 @@
 <?php
 session_start();
+// ALTERADO: Endpoint legado desativado por segurança; fluxo oficial permanece em material.php.
+header('location:material.php');
+exit;
 /*
 require("../app/pdo.php");
 

@@ -1,6 +1,7 @@
 <?php
 session_start();
 require("../app/pdo.php");
+require_once("upload_helper.php");
 
 $_pdo = new connectDB();
 $_pdo->conectar();
@@ -29,44 +30,15 @@ if(!empty($_POST) or !empty($_GET)){
 $quantidade      = $_POST['quantidade'];
 $idGrupoMaterial = $_POST['material'];
 $localizacao     = $_POST['localizacao'];
-$foto            = $_FILES["foto"];
-$error;
+$nome_imagem = null;
+// ALTERADO: Upload de foto centralizado em helper com validação e mensagens de erro consistentes.
+$uploadFoto = scmProcessMaterialPhoto('foto');
+if (!$uploadFoto['ok']) {
+    echo"<script language='javascript' type='text/javascript'>alert('".$uploadFoto['message']."');window.location.href='indicemat.php';</script>";
+    die();
+}
+$nome_imagem = $uploadFoto['filename'];
 
-// Se a foto estiver sido selecionada
-if (!empty($foto["name"])) {
-
-       // Largura máxima em pixels
-       $largura = 150;
-       // Altura máxima em pixels
-       $altura = 180;
-       // Tamanho máximo do arquivo em bytes
-       $tamanho = 1000;
-
-// Verifica se o arquivo é uma imagem
-if(!preg_match("/^image\/(pjpeg|jpeg|png|gif|bmp)$/", $foto["type"])){
-  $error[1] = "Isso não é uma imagem.";
-       } 
-
-       // Pega as dimensões da imagem
-       $dimensoes = getimagesize($foto["tmp_name"]);
-
-       // Se não houver nenhum erro
-       if (count($error) == 0) {
-
-               // Pega extensão da imagem
-               preg_match("/\.(gif|bmp|png|jpg|jpeg){1}$/i", $foto["name"], $ext);
-
-       // Gera um nome único para a imagem
-       $nome_imagem = md5(uniqid(time())) . "." . $ext[1];
-
-       // Caminho de onde ficará a imagem
-        $caminho_imagem = "fotos/" . $nome_imagem;
-
-               // Faz o upload da imagem para seu respectivo caminho
-               move_uploaded_file($foto["tmp_name"], $caminho_imagem);
-
-   }    
-}		
 if($quantidade <= 0){
 	echo"<script language='javascript' type='text/javascript'>alert('Valor inválido para Quantidade');window.location.href='indicemat.php';</script>";
 	die();
