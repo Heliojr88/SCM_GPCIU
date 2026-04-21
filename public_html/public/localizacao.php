@@ -4,9 +4,13 @@ $UsuarioLogado = $_SESSION['nome'];
 
 require("../app/pdo.php");
 require_once("response_helper.php");
+require_once("security_helper.php");
 
 $_pdo = new connectDB();
 $_pdo->conectar();
+// ALTERADO: Endurece sessão e prepara token CSRF.
+scmEnforceSessionTimeout('login.php');
+scmEnsureCsrfToken();
 
 error_reporting(E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
@@ -16,6 +20,11 @@ if ($_SESSION['permissao'] != 1) {
 }
 
 if (!empty($_POST) or ! empty($_GET)){
+    // ALTERADO: Proteção CSRF no cadastro de localização.
+    if (!scmValidateCsrfToken()) {
+        scmUiAlert('Sessão inválida. Atualize a página e tente novamente.', 'localizacao.php');
+        die();
+    }
 
     $UsuarioLogado = $_SESSION['nome'];
     $idUsuario     = $_SESSION['idUsuario'];
@@ -188,6 +197,7 @@ if ((!isset($_SESSION['siape']) == true) and ( !isset($_SESSION['senha']) == tru
                     <br />
                    
 				   <form action="localizacao.php" id="localizacao" name="localizacao" method="POST" class="form-horizontal form-label-left">
+                      <?= scmCsrfInput(); ?>
 
 					  
 					 

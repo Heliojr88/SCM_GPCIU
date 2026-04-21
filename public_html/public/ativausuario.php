@@ -5,9 +5,13 @@ $siape = $_SESSION['siape'];
 
 require("../app/pdo.php");
 require_once("response_helper.php");
+require_once("security_helper.php");
 
 $_pdo = new connectDB();
 $_pdo->conectar();
+// ALTERADO: Endurece sessão e prepara token CSRF.
+scmEnforceSessionTimeout('login.php');
+scmEnsureCsrfToken();
 
 $teste  = $_pdo->getMaster($siape);
 $master = $teste->fetch(PDO::FETCH_ASSOC);
@@ -20,6 +24,11 @@ if($master['master'] != 1){
 }
 
  if(!empty($_POST) or !empty($_GET)){
+    // ALTERADO: Proteção CSRF na ativação/desativação de usuários.
+    if (!scmValidateCsrfToken()) {
+        scmUiAlert('Sessão inválida. Atualize a página e tente novamente.', 'ativausuario.php');
+        die();
+    }
 	 
     $siapeUsuario   = $_POST['usuario'];
     $ativar  = $_POST['ativar'];
@@ -195,6 +204,7 @@ if($master['master'] != 1){
                     <br />
                    
                     <form action="ativausuario.php" id="ativausuario" name="ativausuario" method="POST" class="form-horizontal form-label-left">
+                        <?= scmCsrfInput(); ?>
 
 			<div class="form-group">
                         <label class="control-label col-md-3 col-sm-3 col-xs-12" for="usuario">Usuários</label>

@@ -27,6 +27,15 @@ else
   echo "  INFO: defina as variáveis para executar fluxos com banco."
 fi
 
+echo "  INFO: variáveis opcionais de segurança (auth/sessão):"
+for var in SCM_AUTH_ALLOW_LEGACY_MD5 SCM_SESSION_TIMEOUT SCM_LOGIN_MAX_ATTEMPTS SCM_LOGIN_LOCK_SECONDS; do
+  if [[ -z "${!var:-}" ]]; then
+    echo "  WARN(opcional): variável ausente -> $var (usando default do sistema)"
+  else
+    echo "  OK(opcional): $var definido"
+  fi
+done
+
 echo "[3/5] Checklist manual recomendado (login/cadastro/recuperação/tramitação):"
 cat <<'EOF'
   - Login com usuário ativo.

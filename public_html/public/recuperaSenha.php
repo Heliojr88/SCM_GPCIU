@@ -2,15 +2,24 @@
 session_start();
 require("../app/pdo.php");
 require_once("response_helper.php");
+require_once("security_helper.php");
 
 error_reporting (E_ALL & ~ E_NOTICE & ~ E_DEPRECATED);
 
 $_pdo = new connectDB();
 $_pdo->conectar();
+// ALTERADO: Endurece sessão e prepara token CSRF.
+scmEnforceSessionTimeout('login.php');
+scmEnsureCsrfToken();
 
 $nome = $_SESSION['nome'];
 
 if(!empty($_POST) or !empty($_GET)){
+// ALTERADO: Proteção CSRF para recuperação de senha.
+if (!scmValidateCsrfToken()) {
+       scmUiAlert('Sessão inválida. Atualize a página e tente novamente.', 'recuperaSenha.php');
+       die();
+}
 	
 $cpf    = $_POST['cpf'];
 $email  = $_POST['email'];
@@ -170,6 +179,7 @@ $recupera = $_pdo->recuperaSenha($cpf,$email,$siape,$senha);
                     <br />
                    
 				   <form action="recuperaSenha.php" id="recuperaSenha" name="recuperaSenha" method="POST" class="form-horizontal form-label-left">
+                      <?= scmCsrfInput(); ?>
 					
                         <div class="form-group">
                         <label for="email" class="control-label col-md-3 col-sm-3 col-xs-12">Email</label>
